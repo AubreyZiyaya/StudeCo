@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Complete your profile | StudeCo</title>
+    <link rel="stylesheet" href="../assets/css/styles.css" />
+  </head>
+  <body class="auth-page">
+    <div class="auth-shell">
+      <div class="auth-card">
+        <div class="auth-brand">
+          <span class="brand-mark">S</span>
+          <span>StudeCo</span>
+        </div>
+        <h1>Complete your profile</h1>
+        <p>Tell us a little about yourself to finish onboarding.</p>
+
+        <form id="onboarding-form" class="auth-form">
+          <label>
+            Display name
+            <input type="text" name="display_name" required />
+          </label>
+
+          <label>
+            Institution (optional)
+            <input type="text" name="institution" />
+          </label>
+
+          <label>
+            Programme / Class
+            <input type="text" name="programme" />
+          </label>
+
+          <label>
+            Subjects & interests (comma separated)
+            <input type="text" name="interests" />
+          </label>
+
+          <label>
+            Profile photo
+            <input id="avatar-input" type="file" accept="image/*" />
+          </label>
+
+          <button type="submit" class="btn btn-primary full">Save profile</button>
+        </form>
+
+        <div id="onboarding-message" class="form-message"></div>
+      </div>
+    </div>
+
+    <script type="module" src="../js/pages/onboarding.js"></script>
+  </body>
+</html>
