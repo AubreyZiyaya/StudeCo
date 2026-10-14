@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Platform Settings | StudeCo Admin</title>
+    <link rel="stylesheet" href="../assets/css/styles.css" />
+    <link rel="stylesheet" href="../assets/css/admin.css" />
+  </head>
+  <body class="admin-body">
+    <aside class="admin-sidebar">
+      <div class="brand">
+        <span class="brand-mark">S</span>
+        <span>StudeCo Admin</span>
+      </div>
+      <nav>
+        <a href="index.html">Overview</a>
+        <a href="uploads.html">Upload & storage</a>
+        <a class="active" href="settings.html">Platform</a>
+      </nav>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-header">
+        <h1>Platform settings</h1>
+      </header>
+
+      <section class="card admin-form">
+        <label>
+          Platform name
+          <input type="text" value="StudeCo" />
+        </label>
+
+        <label>
+          Support email
+          <input type="email" value="support@studeco.example" />
+        </label>
+
+        <label>
+          Registration enabled
+          <input type="checkbox" checked />
+        </label>
+
+        <button class="btn btn-primary" type="button">Save platform settings</button>
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,10 @@
+/* Admin styles */
+.admin-main .stats-grid {
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+}
+
+@media (max-width: 900px) {
+  .admin-main .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create account | StudeCo</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body class="auth-page">
+    <div class="auth-shell">
+      <div class="auth-card">
+        <div class="auth-brand">
+          <span class="brand-mark">S</span>
+          <span>StudeCo</span>
+        </div>
+        <h1>Create your account</h1>
+        <p>Join your study community and get started.</p>
+
+        <form id="register-form" class="auth-form">
+          <label>
+            Full name
+            <input type="text" name="display_name" required />
+          </label>
+          <label>
+            Email
+            <input type="email" name="email" required />
+          </label>
+          <label>
+            Password
+            <input type="password" name="password" required minlength="8" />
+          </label>
+          <label>
+            Education level
+            <select name="education_level" required>
+              <option value="secondary">Secondary School</option>
+              <option value="university">University</option>
+            </select>
+          </label>
+          <button type="submit" class="btn btn-primary full">Create account</button>
+        </form>
+
+        <div class="form-secondary-links">
+          <a href="login.html">Already have an account?</a>
+        </div>
+
+        <div id="auth-message" class="form-message"></div>
+      </div>
+    </div>
+
+    <script type="module" src="js/auth.js"></script>
+  </body>
+</html>

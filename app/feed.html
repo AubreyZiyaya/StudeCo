@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Feed | StudeCo</title>
+    <link rel="stylesheet" href="../assets/css/styles.css" />
+  </head>
+  <body>
+    <div class="app-layout">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand-mark">S</span>
+          <span>StudeCo</span>
+        </div>
+        <nav class="sidebar-nav">
+          <a class="active" href="feed.html">Home</a>
+          <a href="profile.html">Profile</a>
+          <a href="groups.html">Groups</a>
+          <a href="resources.html">Resources</a>
+          <a href="messages.html">Messages</a>
+          <a href="notifications.html">Notifications</a>
+          <a href="events.html">Events</a>
+          <a href="opportunities.html">Opportunities</a>
+          <a href="settings.html">Settings</a>
+        </nav>
+      </aside>
+
+      <main class="main-panel">
+        <header class="topbar">
+          <div class="search-box">
+            <input type="search" placeholder="Search students, groups, resources..." />
+          </div>
+          <div class="topbar-actions">
+            <button class="btn btn-secondary">Notifications</button>
+            <button class="btn btn-primary">Create post</button>
+          </div>
+        </header>
+
+        <section class="page-shell">
+          <div class="composer card">
+            <h2>Share something</h2>
+            <textarea placeholder="What would you like to share today?"></textarea>
+            <div class="composer-actions">
+              <button class="btn btn-secondary">Add image</button>
+              <button class="btn btn-primary">Post</button>
+            </div>
+          </div>
+
+          <div class="feed-list">
+            <article class="card post-card">
+              <h3>Study session reminder</h3>
+              <p>Revision group for Calculus is live in the engineering community. Bring notes and questions.</p>
+            </article>
+            <article class="card post-card">
+              <h3>Campus event</h3>
+              <p>Innovation week starts next Tuesday. Join the student associations and workshop sign-up group.</p>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
