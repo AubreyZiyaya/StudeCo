@@ -1,51 +1,306 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Profile | StudeCo</title>
-    <link rel="stylesheet" href="../assets/css/styles.css" />
-  </head>
-  <body>
-    <div class="app-layout">
-      <aside class="sidebar">
-        <div class="brand">
-          <span class="brand-mark">S</span>
-          <span>StudeCo</span>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile – StudeCo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="stylesheet" href="/assets/css/app.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header"><a href="/app/" class="logo"><span class="logo-icon">S</span><span>StudeCo</span></a></div>
+      <nav class="sidebar-nav" id="sidebarNav"></nav>
+      <div class="sidebar-footer"><button class="btn btn-ghost" id="signOutBtn" style="width:100%;">Sign out</button></div>
+    </aside>
+    <div class="main-area">
+      <header class="topbar">
+        <button class="btn btn-ghost btn-icon mobile-sidebar-btn" id="sidebarToggle">☰</button>
+        <h2 style="font-size:1.125rem;margin:0;flex:1;">Profile</h2>
+        <div class="topbar-actions">
+          <button class="btn btn-ghost btn-icon" id="themeToggle">🌓</button>
+          <span class="avatar" id="userAvatar">?</span>
         </div>
-        <nav class="sidebar-nav">
-          <a href="feed.html">Home</a>
-          <a class="active" href="profile.html">Profile</a>
-          <a href="groups.html">Groups</a>
-          <a href="resources.html">Resources</a>
-          <a href="messages.html">Messages</a>
-          <a href="notifications.html">Notifications</a>
-          <a href="events.html">Events</a>
-          <a href="opportunities.html">Opportunities</a>
-          <a href="settings.html">Settings</a>
-        </nav>
-      </aside>
-
-      <main class="main-panel">
-        <section class="profile-header card">
-          <div class="profile-avatar">AZ</div>
-          <div>
-            <h1>Aubrey Ziyaya</h1>
-            <p>Computer Science • University</p>
-            <p>Interested in research, software engineering, and community learning.</p>
-          </div>
-        </section>
-
-        <section class="card">
-          <h2>Profile details</h2>
-          <ul class="profile-stat-list">
-            <li>Education level: University</li>
-            <li>Institution: Example University</li>
-            <li>Programme: Computer Science</li>
-            <li>Interests: AI, security, software engineering</li>
-          </ul>
-        </section>
+      </header>
+      <main class="content" style="max-width:720px;">
+        <div id="profileCard" class="card" style="margin-bottom:1.5rem;">
+          <div class="card-body"><div class="loading-state"><div class="spinner"></div></div></div>
+        </div>
+        <div class="tabs" id="profileTabs">
+          <button class="tab active" data-tab="posts">Posts</button>
+          <button class="tab" data-tab="about">About</button>
+        </div>
+        <div id="profileContent" style="margin-top:1rem;"></div>
       </main>
     </div>
-  </body>
+  </div>
+
+  <!-- Edit modal -->
+  <div class="modal-overlay hidden" id="editModal">
+    <div class="modal" style="max-width:480px;">
+      <div class="modal-header">
+        <h3>Edit profile</h3>
+        <button class="btn btn-ghost btn-icon" id="closeEdit">×</button>
+      </div>
+      <form id="editForm">
+        <div class="form-group">
+          <label class="form-label">Display name</label>
+          <input type="text" id="editName" class="form-input" required maxlength="50">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Bio</label>
+          <textarea id="editBio" class="form-textarea" rows="3" maxlength="300"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">School / University</label>
+          <input type="text" id="editSchool" class="form-input" maxlength="120">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="form-group">
+            <label class="form-label">Age</label>
+            <input type="number" id="editAge" class="form-input" min="10" max="100">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Gender</label>
+            <select id="editGender" class="form-select">
+              <option value="">Prefer not to say</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="non_binary">Non-binary</option>
+              <option value="other">Other</option>
+              <option value="prefer_not_to_say">Prefer not to say</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Grade / Year</label>
+          <input type="text" id="editGrade" class="form-input" maxlength="40">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Programme / Course</label>
+          <input type="text" id="editProgramme" class="form-input" maxlength="100">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Interests (comma-separated)</label>
+          <input type="text" id="editInterests" class="form-input" placeholder="Maths, Coding, Debate">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancelEdit">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import { getSupabase } from '/js/supabase-client.js';
+    import { initShell, renderSidebarNav } from '/js/components/shell.js';
+    import { getProfile, updateProfile } from '/js/services/auth-service.js';
+    import { escapeHtml, formatRelative, showToast, getQueryParam } from '/js/utils/dom.js';
+
+    document.getElementById('sidebarNav').innerHTML = renderSidebarNav('profile');
+    const { user } = await initShell('profile');
+    const supabase = getSupabase();
+
+    const viewId = getQueryParam('id') || user.id;
+    const isOwn = viewId === user.id;
+    let profile = null;
+
+    async function loadProfile() {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', viewId)
+        .single();
+
+      if (error || !data) {
+        document.getElementById('profileCard').innerHTML = '<div class="card-body"><div class="alert alert-danger">Profile not found</div></div>';
+        return;
+      }
+      profile = data;
+
+      // Follower counts
+      const { count: followers } = await supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', viewId);
+      const { count: following } = await supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', viewId);
+
+      let isFollowing = false;
+      if (!isOwn) {
+        const { data: f } = await supabase.from('follows').select('id').eq('follower_id', user.id).eq('following_id', viewId).maybeSingle();
+        isFollowing = !!f;
+      }
+
+      document.getElementById('profileCard').innerHTML = `
+        <div class="card-body">
+          <div class="flex gap-5 items-start" style="flex-wrap:wrap;">
+            <div class="profile-avatar-lg">${(profile.display_name || '?')[0].toUpperCase()}</div>
+            <div style="flex:1;min-width:200px;">
+              <h1 style="font-size:1.5rem;margin-bottom:0.25rem;">${escapeHtml(profile.display_name)}</h1>
+              ${profile.username ? `<p class="text-muted text-sm">@${escapeHtml(profile.username)}</p>` : ''}
+              <p class="text-secondary" style="margin:0.75rem 0;">${escapeHtml(profile.bio || 'No bio yet.')}</p>
+              <div class="flex gap-4 text-sm" style="margin-bottom:0.75rem;">
+                <span><strong>${followers || 0}</strong> followers</span>
+                <span><strong>${following || 0}</strong> following</span>
+              </div>
+              <div class="flex gap-2 flex-wrap text-sm text-muted">
+                ${profile.school_name ? `<span>🏫 ${escapeHtml(profile.school_name)}</span>` : ''}
+                ${profile.education_level ? `<span class="badge">${escapeHtml(profile.education_level)}</span>` : ''}
+                ${profile.grade_or_year ? `<span>${escapeHtml(profile.grade_or_year)}</span>` : ''}
+                ${profile.programme ? `<span>${escapeHtml(profile.programme)}</span>` : ''}
+              </div>
+            </div>
+            <div>
+              ${isOwn
+                ? `<button class="btn btn-secondary" id="editProfileBtn">Edit profile</button>`
+                : `<button class="btn ${isFollowing ? 'btn-secondary' : 'btn-primary'}" id="followBtn">${isFollowing ? 'Following' : 'Follow'}</button>
+                   <a href="/app/messages.html" class="btn btn-ghost btn-sm" style="margin-top:0.5rem;display:block;">Message</a>`
+              }
+            </div>
+          </div>
+        </div>
+      `;
+
+      if (isOwn) {
+        document.getElementById('editProfileBtn')?.addEventListener('click', openEdit);
+      } else {
+        document.getElementById('followBtn')?.addEventListener('click', async () => {
+          if (isFollowing) {
+            await supabase.from('follows').delete().eq('follower_id', user.id).eq('following_id', viewId);
+            showToast('Unfollowed');
+          } else {
+            await supabase.from('follows').insert({ follower_id: user.id, following_id: viewId });
+            showToast('Following!', 'success');
+          }
+          loadProfile();
+        });
+      }
+
+      loadTab('posts');
+    }
+
+    function openEdit() {
+      document.getElementById('editName').value = profile.display_name || '';
+      document.getElementById('editBio').value = profile.bio || '';
+      document.getElementById('editSchool').value = profile.school_name || '';
+      document.getElementById('editAge').value = profile.age || '';
+      document.getElementById('editGender').value = profile.gender || '';
+      document.getElementById('editGrade').value = profile.grade_or_year || '';
+      document.getElementById('editProgramme').value = profile.programme || '';
+      document.getElementById('editInterests').value = (profile.interests || []).join(', ');
+      document.getElementById('editModal').classList.remove('hidden');
+    }
+
+    document.getElementById('closeEdit').onclick = () => document.getElementById('editModal').classList.add('hidden');
+    document.getElementById('cancelEdit').onclick = () => document.getElementById('editModal').classList.add('hidden');
+
+    document.getElementById('editForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const interests = document.getElementById('editInterests').value
+        .split(',').map(s => s.trim()).filter(Boolean);
+      try {
+        await updateProfile({
+          display_name: document.getElementById('editName').value.trim(),
+          bio: document.getElementById('editBio').value.trim() || null,
+          school_name: document.getElementById('editSchool').value.trim() || null,
+          age: parseInt(document.getElementById('editAge').value, 10) || null,
+          gender: document.getElementById('editGender').value || null,
+          grade_or_year: document.getElementById('editGrade').value.trim() || null,
+          programme: document.getElementById('editProgramme').value.trim() || null,
+          interests
+        });
+        showToast('Profile updated!', 'success');
+        document.getElementById('editModal').classList.add('hidden');
+        loadProfile();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+
+    document.getElementById('profileTabs').addEventListener('click', (e) => {
+      const tab = e.target.closest('.tab');
+      if (!tab) return;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      loadTab(tab.dataset.tab);
+    });
+
+    async function loadTab(tab) {
+      const el = document.getElementById('profileContent');
+      if (tab === 'about') {
+        el.innerHTML = `
+          <div class="card"><div class="card-body">
+            <dl class="about-list">
+              <dt>Education</dt><dd>${escapeHtml(profile.education_level || '—')}</dd>
+              <dt>School</dt><dd>${escapeHtml(profile.school_name || '—')}</dd>
+              <dt>Grade / Year</dt><dd>${escapeHtml(profile.grade_or_year || '—')}</dd>
+              <dt>Programme</dt><dd>${escapeHtml(profile.programme || '—')}</dd>
+              ${isOwn || profile.age ? `<dt>Age</dt><dd>${profile.age || '—'}</dd>` : ''}
+              ${profile.gender && profile.gender !== 'prefer_not_to_say' ? `<dt>Gender</dt><dd>${escapeHtml(profile.gender)}</dd>` : ''}
+              <dt>Interests</dt><dd>${(profile.interests || []).map(i => `<span class="badge" style="margin:0.15rem;">${escapeHtml(i)}</span>`).join(' ') || '—'}</dd>
+              <dt>Joined</dt><dd>${profile.created_at ? new Date(profile.created_at).toLocaleDateString() : '—'}</dd>
+            </dl>
+          </div></div>
+        `;
+        return;
+      }
+
+      // Posts
+      const { data: posts } = await supabase
+        .from('posts')
+        .select('id, content, created_at, reaction_count, comment_count')
+        .eq('author_id', viewId)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (!posts?.length) {
+        el.innerHTML = '<div class="empty-state"><p class="text-muted">No posts yet</p></div>';
+        return;
+      }
+      el.innerHTML = posts.map(p => `
+        <article class="card post-card">
+          <div class="card-body">
+            <div class="text-muted text-sm" style="margin-bottom:0.5rem;">${formatRelative(p.created_at)}</div>
+            <div class="post-content">${escapeHtml(p.content || '')}</div>
+            <div class="post-actions">
+              <span class="text-sm text-muted">👍 ${p.reaction_count || 0}</span>
+              <span class="text-sm text-muted">💬 ${p.comment_count || 0}</span>
+            </div>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    loadProfile();
+  </script>
+  <style>
+    .profile-avatar-lg {
+      width: 96px; height: 96px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary-500), var(--primary-800));
+      color: white; display: flex; align-items: center; justify-content: center;
+      font-size: 2.25rem; font-weight: 700; flex-shrink: 0;
+    }
+    .tabs { display: flex; gap: 0.25rem; border-bottom: 1px solid var(--border); }
+    .tab {
+      padding: 0.625rem 1rem; border: none; background: none; cursor: pointer;
+      font-weight: 600; color: var(--text-muted); border-bottom: 2px solid transparent;
+    }
+    .tab.active { color: var(--primary-600); border-bottom-color: var(--primary-600); }
+    .about-list { display: grid; grid-template-columns: 140px 1fr; gap: 0.75rem 1rem; }
+    .about-list dt { font-weight: 600; color: var(--text-muted); font-size: 0.875rem; }
+    .about-list dd { margin: 0; }
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200;
+      display: flex; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .modal {
+      background: var(--bg); border-radius: var(--radius-xl); width: 100%;
+      box-shadow: var(--shadow-xl); padding: 1.5rem; max-height: 90vh; overflow-y: auto;
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.25rem; }
+  </style>
+</body>
 </html>

@@ -1,47 +1,170 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Settings | StudeCo</title>
-    <link rel="stylesheet" href="../assets/css/styles.css" />
-  </head>
-  <body>
-    <div class="app-layout">
-      <aside class="sidebar">
-        <div class="brand">
-          <span class="brand-mark">S</span>
-          <span>StudeCo</span>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings – StudeCo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="stylesheet" href="/assets/css/app.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header"><a href="/app/" class="logo"><span class="logo-icon">S</span><span>StudeCo</span></a></div>
+      <nav class="sidebar-nav" id="sidebarNav"></nav>
+      <div class="sidebar-footer"><button class="btn btn-ghost" id="signOutBtn" style="width:100%;">Sign out</button></div>
+    </aside>
+    <div class="main-area">
+      <header class="topbar">
+        <button class="btn btn-ghost btn-icon mobile-sidebar-btn" id="sidebarToggle">☰</button>
+        <h2 style="font-size:1.125rem;margin:0;flex:1;">Settings</h2>
+        <div class="topbar-actions">
+          <button class="btn btn-ghost btn-icon" id="themeToggle">🌓</button>
+          <span class="avatar" id="userAvatar">?</span>
         </div>
-        <nav class="sidebar-nav">
-          <a href="feed.html">Home</a>
-          <a href="profile.html">Profile</a>
-          <a href="groups.html">Groups</a>
-          <a href="resources.html">Resources</a>
-          <a href="messages.html">Messages</a>
-          <a href="notifications.html">Notifications</a>
-          <a href="events.html">Events</a>
-          <a href="opportunities.html">Opportunities</a>
-          <a class="active" href="settings.html">Settings</a>
-        </nav>
-      </aside>
+      </header>
+      <main class="content" style="max-width:560px;">
+        <div class="card" style="margin-bottom:1.25rem;">
+          <div class="card-header">Appearance</div>
+          <div class="card-body">
+            <label class="flex items-center justify-between">
+              <span>Dark mode</span>
+              <input type="checkbox" id="darkModeToggle">
+            </label>
+          </div>
+        </div>
 
-      <main class="main-panel">
-        <section class="card">
-          <h1>Settings</h1>
-          <form class="stacked-form">
-            <label>
-              Display name
-              <input type="text" value="Aubrey Ziyaya" />
+        <div class="card" style="margin-bottom:1.25rem;">
+          <div class="card-header">Privacy</div>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="form-label">Profile visibility</label>
+              <select id="profileVisibility" class="form-select">
+                <option value="public">Public</option>
+                <option value="institution">Institution only</option>
+                <option value="followers">Followers only</option>
+                <option value="private">Private</option>
+              </select>
+            </div>
+            <button class="btn btn-primary btn-sm" id="savePrivacy">Save privacy</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:1.25rem;">
+          <div class="card-header">Notifications</div>
+          <div class="card-body" id="notifPrefs">
+            <label class="flex items-center justify-between" style="margin-bottom:0.75rem;">
+              <span>Reactions</span><input type="checkbox" id="prefReactions" checked>
             </label>
-            <label>
-              Bio
-              <textarea>Student and software engineering enthusiast.</textarea>
+            <label class="flex items-center justify-between" style="margin-bottom:0.75rem;">
+              <span>Comments</span><input type="checkbox" id="prefComments" checked>
             </label>
-            <button class="btn btn-primary" type="button">Save changes</button>
-          </form>
-        </section>
+            <label class="flex items-center justify-between" style="margin-bottom:0.75rem;">
+              <span>Messages</span><input type="checkbox" id="prefMessages" checked>
+            </label>
+            <label class="flex items-center justify-between" style="margin-bottom:0.75rem;">
+              <span>Group invites</span><input type="checkbox" id="prefGroupInvites" checked>
+            </label>
+            <label class="flex items-center justify-between" style="margin-bottom:0.75rem;">
+              <span>Announcements</span><input type="checkbox" id="prefAnnouncements" checked>
+            </label>
+            <button class="btn btn-primary btn-sm" id="saveNotifs">Save preferences</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:1.25rem;">
+          <div class="card-header">Account</div>
+          <div class="card-body">
+            <p class="text-secondary text-sm" style="margin-bottom:1rem;">Email: <strong id="accountEmail">—</strong></p>
+            <a href="/forgot-password.html" class="btn btn-secondary btn-sm">Change password</a>
+          </div>
+        </div>
+
+        <div class="card" style="border-color:var(--danger);">
+          <div class="card-header" style="color:var(--danger);">Danger zone</div>
+          <div class="card-body">
+            <p class="text-secondary text-sm" style="margin-bottom:1rem;">Request account deletion. This cannot be undone easily.</p>
+            <button class="btn btn-danger btn-sm" id="deleteAccountBtn">Request account deletion</button>
+          </div>
+        </div>
       </main>
     </div>
-  </body>
+  </div>
+  <script type="module">
+    import { getSupabase } from '/js/supabase-client.js';
+    import { initShell, renderSidebarNav } from '/js/components/shell.js';
+    import { getProfile, updateProfile } from '/js/services/auth-service.js';
+    import { showToast } from '/js/utils/dom.js';
+
+    document.getElementById('sidebarNav').innerHTML = renderSidebarNav('settings');
+    const { user, profile } = await initShell('settings');
+    const supabase = getSupabase();
+
+    document.getElementById('accountEmail').textContent = user.email || '—';
+    document.getElementById('darkModeToggle').checked = localStorage.getItem('studeco-theme') === 'dark';
+
+    if (profile) {
+      document.getElementById('profileVisibility').value = profile.profile_visibility || profile.privacy_settings?.profile_visibility || 'public';
+      const prefs = profile.notification_preferences || {};
+      document.getElementById('prefReactions').checked = prefs.reactions !== false;
+      document.getElementById('prefComments').checked = prefs.comments !== false;
+      document.getElementById('prefMessages').checked = prefs.messages !== false;
+      document.getElementById('prefGroupInvites').checked = prefs.group_invites !== false;
+      document.getElementById('prefAnnouncements').checked = prefs.announcements !== false;
+    }
+
+    document.getElementById('darkModeToggle').addEventListener('change', (e) => {
+      const theme = e.target.checked ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('studeco-theme', theme);
+    });
+
+    document.getElementById('savePrivacy').addEventListener('click', async () => {
+      try {
+        await updateProfile({
+          profile_visibility: document.getElementById('profileVisibility').value,
+          privacy_settings: {
+            ...(profile?.privacy_settings || {}),
+            profile_visibility: document.getElementById('profileVisibility').value
+          }
+        });
+        showToast('Privacy saved', 'success');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+
+    document.getElementById('saveNotifs').addEventListener('click', async () => {
+      try {
+        await updateProfile({
+          notification_preferences: {
+            reactions: document.getElementById('prefReactions').checked,
+            comments: document.getElementById('prefComments').checked,
+            messages: document.getElementById('prefMessages').checked,
+            group_invites: document.getElementById('prefGroupInvites').checked,
+            announcements: document.getElementById('prefAnnouncements').checked
+          }
+        });
+        showToast('Notification preferences saved', 'success');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+
+    document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
+      if (!confirm('Request account deletion? An administrator will process this request.')) return;
+      // Log a report / moderation request style entry
+      await supabase.from('reports').insert({
+        reporter_id: user.id,
+        target_type: 'user',
+        target_id: user.id,
+        reason: 'account_deletion_request',
+        details: 'User requested account deletion from settings'
+      });
+      showToast('Deletion request submitted. Support will contact you.', 'success');
+    });
+  </script>
+</body>
 </html>

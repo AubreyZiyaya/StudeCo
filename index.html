@@ -1,189 +1,286 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>StudeCo | Connect. Learn. Collaborate. Grow.</title>
-    <meta name="description" content="StudeCo connects students for academic collaboration, peer support, events, and resource sharing." />
-    <link rel="stylesheet" href="assets/css/styles.css" />
-  </head>
-  <body>
-    <header class="site-header">
-      <div class="container nav-wrap">
-        <div class="brand" aria-label="StudeCo home">
-          <span class="brand-mark">S</span>
-          <span>StudeCo</span>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="StudeCo – Connect. Learn. Collaborate. Grow. The social network built for secondary school and university students.">
+  <title>StudeCo – Connect. Learn. Collaborate. Grow.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="stylesheet" href="/assets/css/landing.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <header class="landing-nav">
+    <div class="container flex items-center justify-between">
+      <a href="/" class="logo">
+        <span class="logo-icon">S</span>
+        <span>StudeCo</span>
+      </a>
+      <nav class="nav-links" id="navLinks">
+        <a href="#features">Features</a>
+        <a href="#secondary">Secondary</a>
+        <a href="#university">University</a>
+        <a href="#safety">Safety</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <div class="nav-actions">
+        <a href="/login.html" class="btn btn-ghost">Sign in</a>
+        <a href="/register.html" class="btn btn-primary">Get started</a>
+        <button class="btn btn-ghost btn-icon mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-badge">Built for students, by students</div>
+        <h1>Connect. Learn.<br>Collaborate. Grow.</h1>
+        <p class="hero-subtitle">
+          StudeCo is the social network designed specifically for secondary school and university students.
+          Share resources, join study groups, discuss coursework, and build your academic network — all in one place.
+        </p>
+        <div class="hero-actions">
+          <a href="/register.html" class="btn btn-primary btn-lg">Join StudeCo free</a>
+          <a href="#features" class="btn btn-secondary btn-lg">Explore features</a>
         </div>
-        <nav class="main-nav" aria-label="Main navigation">
-          <a href="#features">Features</a>
-          <a href="#schools">Secondary School</a>
-          <a href="#universities">University</a>
-          <a href="#faq">FAQ</a>
-        </nav>
-        <div class="nav-actions">
-          <a class="btn btn-secondary" href="login.html">Sign in</a>
-          <a class="btn btn-primary" href="register.html">Get started</a>
+        <p class="hero-note">No spam. Age-appropriate. Privacy-first.</p>
+      </div>
+      <div class="hero-visual">
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span class="avatar">A</span>
+            <div>
+              <strong>Study Group – Form 4 Maths</strong>
+              <span class="text-muted text-sm">12 members · Active now</span>
+            </div>
+          </div>
+          <p>Anyone have the past paper for Algebra II from last term?</p>
+          <div class="hero-reactions">
+            <span>👍 8</span>
+            <span>💡 3</span>
+            <span>💬 5 replies</span>
+          </div>
         </div>
       </div>
-    </header>
+    </div>
+  </section>
 
-    <main>
-      <section class="hero">
-        <div class="container hero-grid">
-          <div class="hero-copy">
-            <p class="eyebrow">Student social network</p>
-            <h1>Connect. Learn. Collaborate. Grow.</h1>
-            <p class="lead">
-              StudeCo helps students connect with classmates, communities, academics,
-              and career opportunities in one secure campus-first platform.
-            </p>
-            <div class="cta-row">
-              <a class="btn btn-primary" href="register.html">Join StudeCo</a>
-              <a class="btn btn-secondary" href="login.html">Already a member?</a>
-            </div>
-            <ul class="proof-list">
-              <li>School and university communities</li>
-              <li>Resource sharing & academic groups</li>
-              <li>Private messaging & safer collaboration</li>
-            </ul>
-          </div>
-
-          <div class="hero-panel" aria-label="Platform highlights">
-            <div class="panel-card">
-              <h3>Academic support</h3>
-              <p>Revision groups, classes, notes, polls, and discussion spaces.</p>
-            </div>
-            <div class="panel-card muted">
-              <h3>Campus life</h3>
-              <p>Events, clubs, opportunities, scholarships, and peer mentoring.</p>
-            </div>
-            <div class="panel-card muted">
-              <h3>Verified communities</h3>
-              <p>Institution-aware onboarding and admin-moderated access.</p>
-            </div>
-          </div>
+  <!-- Features -->
+  <section id="features" class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2>Everything students need</h2>
+        <p class="text-secondary">Academic collaboration tools designed around real student workflows.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">📚</div>
+          <h3>Academic Resources</h3>
+          <p>Upload and share lecture notes, revision guides, past papers and presentations — with admin-controlled storage limits.</p>
         </div>
-      </section>
-
-      <section id="features" class="feature-block">
-        <div class="container">
-          <div class="section-heading">
-            <p class="eyebrow">Why students choose StudeCo</p>
-            <h2>Built for study, community, and growth.</h2>
-          </div>
-          <div class="feature-grid">
-            <article class="feature-card">
-              <h3>Academic communities</h3>
-              <p>Find classmates, faculties, clubs, subject groups, and programmes.</p>
-            </article>
-            <article class="feature-card">
-              <h3>Shared resources</h3>
-              <p>Upload notes, revision guides, and study material with permissions.</p>
-            </article>
-            <article class="feature-card">
-              <h3>Private messaging</h3>
-              <p>Keep conversations within authorized groups and direct chats.</p>
-            </article>
-            <article class="feature-card">
-              <h3>Career & opportunities</h3>
-              <p>Explore internships, scholarships, events, and professional pathways.</p>
-            </article>
-          </div>
+        <div class="feature-card">
+          <div class="feature-icon">👥</div>
+          <h3>Study Groups</h3>
+          <p>Create or join public, private or institution-restricted groups for subjects, classes and projects.</p>
         </div>
-      </section>
-
-      <section id="schools" class="feature-split">
-        <div class="container split-grid">
-          <div>
-            <p class="eyebrow">Secondary school mode</p>
-            <h2>Academic support designed for younger students.</h2>
-            <ul class="check-list">
-              <li>Class and subject communities</li>
-              <li>Teacher-approved announcements</li>
-              <li>Exam revision materials and safe content discovery</li>
-              <li>Activity groups, clubs, and school events</li>
-            </ul>
-          </div>
-          <div class="mini-card">
-            <h3>Age-appropriate learning spaces</h3>
-            <p>Secure, student-first collaboration that respects school and family privacy standards.</p>
-          </div>
+        <div class="feature-card">
+          <div class="feature-icon">💬</div>
+          <h3>Messaging</h3>
+          <p>Direct and group conversations with realtime updates, attachments and privacy controls.</p>
         </div>
-      </section>
-
-      <section id="universities" class="feature-split alt">
-        <div class="container split-grid">
-          <div class="mini-card">
-            <h3>University and campus communities</h3>
-            <p>From course groups to clubs, research, mentoring and job opportunities.</p>
-          </div>
-          <div>
-            <p class="eyebrow">University mode</p>
-            <h2>Connected campus life for higher education.</h2>
-            <ul class="check-list">
-              <li>Faculties, departments, and programmes</li>
-              <li>Lecture notes, research collaboration, and peer mentoring</li>
-              <li>Scholarships, internships, and campus events</li>
-              <li>Student associations and career profiles</li>
-            </ul>
-          </div>
+        <div class="feature-card">
+          <div class="feature-icon">🎓</div>
+          <h3>Institution Communities</h3>
+          <p>Connect with classmates from your school or university. Verification workflows keep communities authentic.</p>
         </div>
-      </section>
-
-      <section class="faq-section" id="faq">
-        <div class="container">
-          <div class="section-heading">
-            <p class="eyebrow">Frequently asked questions</p>
-            <h2>Everything students need to know.</h2>
-          </div>
-          <div class="faq-grid">
-            <div class="faq-item">
-              <h3>Is StudeCo just for universities?</h3>
-              <p>No. StudeCo supports both secondary school and university experiences.</p>
-            </div>
-            <div class="faq-item">
-              <h3>How are communities verified?</h3>
-              <p>Institution claims are reviewed and verified through a formal process.</p>
-            </div>
-            <div class="faq-item">
-              <h3>Are resources moderated?</h3>
-              <p>Yes. Uploads are subject to configured rules and administrator moderation.</p>
-            </div>
-            <div class="faq-item">
-              <h3>How do I sign up?</h3>
-              <p>Create an account, verify your email, choose your education level, and complete profile setup.</p>
-            </div>
-          </div>
+        <div class="feature-card">
+          <div class="feature-icon">📅</div>
+          <h3>Events & Opportunities</h3>
+          <p>Discover workshops, clubs, scholarships, internships and academic competitions.</p>
         </div>
-      </section>
-    </main>
+        <div class="feature-card">
+          <div class="feature-icon">🔔</div>
+          <h3>Smart Notifications</h3>
+          <p>Stay updated on reactions, comments, group invites, messages and important announcements.</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
-    <footer class="site-footer">
-      <div class="container footer-grid">
+  <!-- Secondary School -->
+  <section id="secondary" class="section section-alt">
+    <div class="container">
+      <div class="two-col">
         <div>
-          <div class="brand small">
-            <span class="brand-mark">S</span>
+          <span class="badge">Secondary School Mode</span>
+          <h2>Built for secondary school students</h2>
+          <ul class="feature-list">
+            <li>School-based communities and class groups</li>
+            <li>Subject discussions and revision challenges</li>
+            <li>Permitted past papers and revision materials</li>
+            <li>Teacher-approved announcements</li>
+            <li>Age-appropriate content discovery</li>
+            <li>Strong privacy and messaging controls</li>
+          </ul>
+        </div>
+        <div class="mode-card">
+          <h4>Example communities</h4>
+          <div class="mode-tags">
+            <span>Form 3 Science</span>
+            <span>IGCSE Maths</span>
+            <span>Debate Club</span>
+            <span>Past Papers Hub</span>
+            <span>School Events</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- University -->
+  <section id="university" class="section">
+    <div class="container">
+      <div class="two-col reverse">
+        <div>
+          <span class="badge badge-info">University Mode</span>
+          <h2>Designed for university life</h2>
+          <ul class="feature-list">
+            <li>Campus, faculty and programme communities</li>
+            <li>Course and module discussion groups</li>
+            <li>Lecture notes and research collaboration</li>
+            <li>Student association communities</li>
+            <li>Scholarships, internships and job boards</li>
+            <li>Peer mentoring and career profiles</li>
+          </ul>
+        </div>
+        <div class="mode-card">
+          <h4>Example communities</h4>
+          <div class="mode-tags">
+            <span>CS Year 2</span>
+            <span>Engineering Society</span>
+            <span>Research Methods</span>
+            <span>Internship Board</span>
+            <span>Campus Events</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Safety -->
+  <section id="safety" class="section section-alt">
+    <div class="container">
+      <div class="section-header">
+        <h2>Safety & Privacy first</h2>
+        <p class="text-secondary">We take student safety seriously.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <h3>Reporting & Moderation</h3>
+          <p>Easy reporting tools and a dedicated moderation workflow for posts, messages, groups and users.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Blocking & Privacy</h3>
+          <p>Block users, control profile visibility, and manage who can message or follow you.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Admin Controls</h3>
+          <p>Comprehensive admin dashboard for user management, content review and upload policy control.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Secure by design</h3>
+          <p>Row Level Security, no service-role keys in the browser, and verified institution workflows.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2>Frequently asked questions</h2>
+      </div>
+      <div class="faq-list">
+        <details class="faq-item">
+          <summary>Is StudeCo free?</summary>
+          <p>Yes. Core features are free for students. Storage limits are managed by platform administrators.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Who can join?</summary>
+          <p>Secondary school and university students. You select your education level during onboarding.</p>
+        </details>
+        <details class="faq-item">
+          <summary>How is my data protected?</summary>
+          <p>We use industry-standard authentication (Supabase Auth), Row Level Security policies, and never store passwords in plain form. Private messages are only accessible to conversation participants.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Can I upload study materials?</summary>
+          <p>Yes — PDFs, images, presentations and notes are supported, subject to administrator-configured limits and permitted formats. Copyrighted material should only be shared where you have the right to do so.</p>
+        </details>
+        <details class="faq-item">
+          <summary>What happens if storage is full?</summary>
+          <p>Administrators control upload availability. When capacity is reached, a clear message is shown and optional approved alternative destinations may be provided.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <div class="container">
+      <h2>Ready to connect with your academic community?</h2>
+      <p>Join thousands of students already using StudeCo.</p>
+      <a href="/register.html" class="btn btn-primary btn-lg">Create your free account</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="landing-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <a href="/" class="logo">
+            <span class="logo-icon">S</span>
             <span>StudeCo</span>
-          </div>
-          <p>Connect. Learn. Collaborate. Grow.</p>
+          </a>
+          <p class="text-muted text-sm" style="margin-top: 1rem;">Connect. Learn. Collaborate. Grow.</p>
         </div>
         <div>
-          <h4>Company</h4>
+          <h4>Product</h4>
           <a href="#features">Features</a>
+          <a href="#secondary">Secondary</a>
+          <a href="#university">University</a>
+        </div>
+        <div>
+          <h4>Support</h4>
+          <a href="mailto:support@studeco.app">Contact</a>
           <a href="#faq">FAQ</a>
         </div>
         <div>
           <h4>Legal</h4>
-          <a href="#">Privacy</a>
-          <a href="#">Terms</a>
-          <a href="#">Community Guidelines</a>
-        </div>
-        <div>
-          <h4>Support</h4>
-          <a href="#">Contact</a>
-          <a href="#">Help centre</a>
+          <a href="/terms.html">Terms</a>
+          <a href="/privacy.html">Privacy</a>
+          <a href="/guidelines.html">Community Guidelines</a>
         </div>
       </div>
-    </footer>
-  </body>
+      <div class="footer-bottom">
+        <p class="text-muted text-sm">© 2026 StudeCo. Built for students.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script type="module">
+    const btn = document.getElementById('mobileMenuBtn');
+    const links = document.getElementById('navLinks');
+    btn?.addEventListener('click', () => links.classList.toggle('open'));
+  </script>
+</body>
 </html>

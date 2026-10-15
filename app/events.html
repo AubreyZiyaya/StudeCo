@@ -1,46 +1,128 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Events | StudeCo</title>
-    <link rel="stylesheet" href="../assets/css/styles.css" />
-  </head>
-  <body>
-    <div class="app-layout">
-      <aside class="sidebar">
-        <div class="brand">
-          <span class="brand-mark">S</span>
-          <span>StudeCo</span>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Events – StudeCo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="stylesheet" href="/assets/css/app.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header"><a href="/app/" class="logo"><span class="logo-icon">S</span><span>StudeCo</span></a></div>
+      <nav class="sidebar-nav" id="sidebarNav"></nav>
+      <div class="sidebar-footer"><button class="btn btn-ghost" id="signOutBtn" style="width:100%;">Sign out</button></div>
+    </aside>
+    <div class="main-area">
+      <header class="topbar">
+        <button class="btn btn-ghost btn-icon mobile-sidebar-btn" id="sidebarToggle">☰</button>
+        <h2 style="font-size:1.125rem;margin:0;flex:1;">Events</h2>
+        <div class="topbar-actions">
+          <button class="btn btn-primary btn-sm" id="createEventBtn">+ Event</button>
+          <button class="btn btn-ghost btn-icon" id="themeToggle">🌓</button>
+          <span class="avatar" id="userAvatar">?</span>
         </div>
-        <nav class="sidebar-nav">
-          <a href="feed.html">Home</a>
-          <a href="groups.html">Groups</a>
-          <a href="resources.html">Resources</a>
-          <a href="messages.html">Messages</a>
-          <a href="notifications.html">Notifications</a>
-          <a class="active" href="events.html">Events</a>
-          <a href="opportunities.html">Opportunities</a>
-          <a href="profile.html">Profile</a>
-          <a href="settings.html">Settings</a>
-        </nav>
-      </aside>
-
-      <main class="main-panel">
-        <section class="card">
-          <h1>Events & activities</h1>
-          <div class="event-list">
-            <article class="card mini">
-              <h3>Innovation Week</h3>
-              <p>13 Nov 2026 • Campus Hall</p>
-            </article>
-            <article class="card mini">
-              <h3>Peer mentoring workshop</h3>
-              <p>18 Nov 2026 • Library Seminar Room</p>
-            </article>
-          </div>
-        </section>
+      </header>
+      <main class="content" style="max-width:800px;">
+        <div id="eventsList"></div>
       </main>
     </div>
-  </body>
+  </div>
+  <div class="modal-overlay hidden" id="eventModal">
+    <div class="modal" style="max-width:440px;background:var(--bg);border-radius:var(--radius-xl);padding:1.5rem;box-shadow:var(--shadow-xl);">
+      <div style="display:flex;justify-content:space-between;margin-bottom:1rem;">
+        <h3>Create event</h3>
+        <button class="btn btn-ghost btn-icon" id="closeEventModal">×</button>
+      </div>
+      <form id="eventForm">
+        <div class="form-group"><label class="form-label">Title *</label><input id="evTitle" class="form-input" required></div>
+        <div class="form-group"><label class="form-label">Description</label><textarea id="evDesc" class="form-textarea" rows="3"></textarea></div>
+        <div class="form-group"><label class="form-label">Type</label>
+          <select id="evType" class="form-select">
+            <option value="workshop">Workshop</option>
+            <option value="club">Club</option>
+            <option value="academic">Academic</option>
+            <option value="social">Social</option>
+            <option value="conference">Conference</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Starts at *</label><input type="datetime-local" id="evStart" class="form-input" required></div>
+        <div class="form-group"><label class="form-label">Location</label><input id="evLoc" class="form-input"></div>
+        <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1rem;">
+          <button type="button" class="btn btn-secondary" id="cancelEvent">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script type="module">
+    import { getSupabase } from '/js/supabase-client.js';
+    import { initShell, renderSidebarNav } from '/js/components/shell.js';
+    import { escapeHtml, formatDate, showToast } from '/js/utils/dom.js';
+
+    document.getElementById('sidebarNav').innerHTML = renderSidebarNav('events');
+    const { user } = await initShell('events');
+    const supabase = getSupabase();
+
+    async function load() {
+      const list = document.getElementById('eventsList');
+      const { data, error } = await supabase
+        .from('events')
+        .select('*, profiles:organizer_id(display_name)')
+        .eq('is_approved', true)
+        .gte('starts_at', new Date().toISOString())
+        .order('starts_at', { ascending: true })
+        .limit(30);
+      if (error) { list.innerHTML = `<div class="alert alert-danger">${escapeHtml(error.message)}</div>`; return; }
+      if (!data?.length) {
+        list.innerHTML = '<div class="empty-state"><h3>No upcoming events</h3><p class="text-muted">Create one for your community.</p></div>';
+        return;
+      }
+      list.innerHTML = data.map(e => `
+        <article class="card" style="margin-bottom:0.75rem;">
+          <div class="card-body">
+            <div class="flex justify-between items-start gap-3">
+              <div>
+                <span class="badge">${escapeHtml(e.event_type || 'event')}</span>
+                <h3 style="font-size:1.0625rem;margin:0.35rem 0;">${escapeHtml(e.title)}</h3>
+                <p class="text-secondary text-sm">${escapeHtml(e.description || '')}</p>
+                <div class="text-sm text-muted" style="margin-top:0.5rem;">
+                  📅 ${formatDate(e.starts_at)}
+                  ${e.location ? ` · 📍 ${escapeHtml(e.location)}` : ''}
+                  ${e.is_online ? ' · Online' : ''}
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    const modal = document.getElementById('eventModal');
+    document.getElementById('createEventBtn').onclick = () => modal.classList.remove('hidden');
+    document.getElementById('closeEventModal').onclick = () => modal.classList.add('hidden');
+    document.getElementById('cancelEvent').onclick = () => modal.classList.add('hidden');
+
+    document.getElementById('eventForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const { error } = await supabase.from('events').insert({
+        organizer_id: user.id,
+        title: document.getElementById('evTitle').value.trim(),
+        description: document.getElementById('evDesc').value.trim() || null,
+        event_type: document.getElementById('evType').value,
+        starts_at: new Date(document.getElementById('evStart').value).toISOString(),
+        location: document.getElementById('evLoc').value.trim() || null
+      });
+      if (error) showToast(error.message, 'error');
+      else { showToast('Event created!', 'success'); modal.classList.add('hidden'); e.target.reset(); load(); }
+    });
+
+    load();
+  </script>
+  <style>.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:1rem;}</style>
+</body>
 </html>

@@ -1,52 +1,180 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Create account | StudeCo</title>
-    <link rel="stylesheet" href="assets/css/styles.css" />
-  </head>
-  <body class="auth-page">
-    <div class="auth-shell">
-      <div class="auth-card">
-        <div class="auth-brand">
-          <span class="brand-mark">S</span>
-          <span>StudeCo</span>
-        </div>
-        <h1>Create your account</h1>
-        <p>Join your study community and get started.</p>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create account – StudeCo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="stylesheet" href="/assets/css/auth.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="auth-page">
+  <div class="auth-container" style="max-width:480px;">
+    <div class="auth-card">
+      <a href="/" class="logo" style="justify-content:center;margin-bottom:1.5rem;">
+        <span class="logo-icon">S</span>
+        <span>StudeCo</span>
+      </a>
+      <h1>Join StudeCo</h1>
+      <p class="text-secondary text-center" style="margin-bottom:1.5rem;">Create your free student account.</p>
 
-        <form id="register-form" class="auth-form">
-          <label>
-            Full name
-            <input type="text" name="display_name" required />
-          </label>
-          <label>
-            Email
-            <input type="email" name="email" required />
-          </label>
-          <label>
-            Password
-            <input type="password" name="password" required minlength="8" />
-          </label>
-          <label>
-            Education level
-            <select name="education_level" required>
-              <option value="secondary">Secondary School</option>
-              <option value="university">University</option>
+      <div id="alert" class="alert hidden" role="alert"></div>
+
+      <form id="registerForm">
+        <div class="form-group">
+          <label class="form-label" for="displayName">Display name *</label>
+          <input type="text" id="displayName" class="form-input" required minlength="2" maxlength="50" placeholder="Your name">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="email">Email *</label>
+          <input type="email" id="email" class="form-input" required autocomplete="email" placeholder="you@school.edu">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="password">Password *</label>
+          <input type="password" id="password" class="form-input" required minlength="8" autocomplete="new-password" placeholder="At least 8 characters">
+          <p class="form-hint">Use at least 8 characters with a mix of letters and numbers.</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Education level *</label>
+          <div class="edu-options">
+            <label class="edu-option">
+              <input type="radio" name="educationLevel" value="secondary" required>
+              <span>Secondary School</span>
+            </label>
+            <label class="edu-option">
+              <input type="radio" name="educationLevel" value="university" required>
+              <span>University</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="schoolName">School / University *</label>
+          <input type="text" id="schoolName" class="form-input" required maxlength="120" placeholder="e.g. Riverside High School or University of Example">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div class="form-group">
+            <label class="form-label" for="age">Age *</label>
+            <input type="number" id="age" class="form-input" required min="10" max="100" placeholder="16">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="gender">Gender</label>
+            <select id="gender" class="form-select">
+              <option value="">Prefer not to say</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="non_binary">Non-binary</option>
+              <option value="other">Other</option>
+              <option value="prefer_not_to_say">Prefer not to say</option>
             </select>
-          </label>
-          <button type="submit" class="btn btn-primary full">Create account</button>
-        </form>
-
-        <div class="form-secondary-links">
-          <a href="login.html">Already have an account?</a>
+          </div>
         </div>
 
-        <div id="auth-message" class="form-message"></div>
-      </div>
-    </div>
+        <div class="form-group">
+          <label class="form-label" for="gradeOrYear">Grade / Year (optional)</label>
+          <input type="text" id="gradeOrYear" class="form-input" maxlength="40" placeholder="e.g. Form 4, Year 2, Freshman">
+        </div>
 
-    <script type="module" src="js/auth.js"></script>
-  </body>
+        <div class="form-group">
+          <label class="text-sm">
+            <input type="checkbox" id="terms" required>
+            I agree to the <a href="/terms.html" target="_blank">Terms</a> and <a href="/privacy.html" target="_blank">Privacy Policy</a>
+          </label>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;" id="submitBtn">
+          Create account
+        </button>
+      </form>
+
+      <p class="text-center text-sm text-secondary" style="margin-top:1.5rem;">
+        Already have an account? <a href="/login.html">Sign in</a>
+      </p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { getSupabase } from '/js/supabase-client.js';
+    import { CONFIG } from '/js/config.js';
+
+    const form = document.getElementById('registerForm');
+    const alertEl = document.getElementById('alert');
+    const submitBtn = document.getElementById('submitBtn');
+
+    function showAlert(message, type = 'danger') {
+      alertEl.textContent = message;
+      alertEl.className = `alert alert-${type}`;
+      alertEl.classList.remove('hidden');
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner"></span>';
+
+      const displayName = document.getElementById('displayName').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const educationLevel = form.querySelector('input[name="educationLevel"]:checked')?.value;
+      const schoolName = document.getElementById('schoolName').value.trim();
+      const age = parseInt(document.getElementById('age').value, 10);
+      const gender = document.getElementById('gender').value || null;
+      const gradeOrYear = document.getElementById('gradeOrYear').value.trim() || null;
+
+      if (!educationLevel) {
+        showAlert('Please select your education level.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create account';
+        return;
+      }
+      if (age < 10 || age > 100) {
+        showAlert('Please enter a valid age.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create account';
+        return;
+      }
+
+      const supabase = getSupabase();
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            display_name: displayName,
+            education_level: educationLevel,
+            school_name: schoolName,
+            age: String(age),
+            gender: gender || undefined
+          },
+          emailRedirectTo: window.location.origin + '/login.html'
+        }
+      });
+
+      if (error) {
+        showAlert(error.message);
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create account';
+        return;
+      }
+
+      if (data.user) {
+        await supabase.from('profiles').update({
+          education_level: educationLevel,
+          display_name: displayName,
+          school_name: schoolName,
+          age,
+          gender,
+          grade_or_year: gradeOrYear
+        }).eq('id', data.user.id);
+      }
+
+      showAlert('Account created! Please check your email to verify your address before signing in.', 'success');
+      form.reset();
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Create account';
+    });
+  </script>
+</body>
 </html>

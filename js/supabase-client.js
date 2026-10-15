@@ -1,38 +1,115 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import appConfig from "./config.js";
+/**
+ * Supabase Client Initialization
+ * Uses the official @supabase/supabase-js library loaded via CDN or module.
+ */
 
-export const supabase = createClient(appConfig.supabaseUrl, appConfig.supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-  },
-});
+import { CONFIG } from './config.js';
 
-export async function getSession() {
-  return supabase.auth.getSession();
-}
+let supabase = null;
 
-export async function signIn(email, password) {
-  return supabase.auth.signInWithPassword({ email, password });
-}
+/**
+ * Initialize and return the Supabase client (singleton).
+ */
+export function getSupabase() {
+  if (supabase) return supabase;
 
-export async function signUp({ email, password, display_name, education_level }) {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        display_name,
-        education_level,
+  if (typeof window.supabase === 'undefined') {
+    console.error('Supabase JS library not loaded. Include the CDN script.');
+    return null;
+  }
+
+  supabase = window.supabase.createClient(
+    CONFIG.SUPABASE_URL,
+    CONFIG.SUPABASE_ANON_KEY,
+    {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        storage: window.localStorage
       },
-    },
-  });
+      realtime: {
+        params: {
+          eventsPerSecond: 10
+        }
+      }
+    }
+  );
 
-  if (error) return { error };
-  return { data };
+  return supabase;
 }
 
+/**
+ * Get the current authenticated user.
+ */
+export async function getCurrentUser() {
+  const client = getSupabase();
+  if (!client) return null;
+
+  const { data: { user }, error } = await client.auth.getUser();
+  if (error) {
+    console.warn('getCurrentUser error:', error.message);
+    return null;
+  }
+  return user;
+}
+
+/**
+ * Get the current session.
+ */
+export async function getSession() {
+  const client = getSupabase();
+  if (!client) return null;
+
+  const { data: { session }, error } = await client.auth.getSession();
+  if (error) return null;
+  return session;
+}
+
+/**
+ * Sign out the current user.
+ */
 export async function signOut() {
-  return supabase.auth.signOut();
+  const client = getSupabase();
+  if (!client) return;
+  await client.auth.signOut();
+  window.location.href = CONFIG.ROUTES.login;
 }
+
+/**
+ * Require authentication. Redirects to login if not authenticated.
+ * Returns the user if authenticated.
+ */
+export async function requireAuth() {
+  const user = await getCurrentUser();
+  if (!user) {
+    const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+    window.location.href = `${CONFIG.ROUTES.login}?returnTo=${returnTo}`;
+    return null;
+  }
+  return user;
+}
+
+/**
+ * Require admin role. Redirects if not admin.
+ */
+export async function requireAdmin() {
+  const user = await requireAuth();
+  if (!user) return null;
+
+  const client = getSupabase();
+  const { data, error } = await client
+    .from('admin_roles')
+    .select('role')
+    .eq('user_id', user.id)
+    .in('role', ['super_admin', 'admin'])
+    .maybeSingle();
+
+  if (error || !data) {
+    window.location.href = CONFIG.ROUTES.app;
+    return null;
+  }
+  return { user, role: data.role };
+}
+
+export default getSupabase;

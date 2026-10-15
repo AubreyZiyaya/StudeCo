@@ -1,42 +1,105 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sign in | StudeCo</title>
-    <link rel="stylesheet" href="assets/css/styles.css" />
-  </head>
-  <body class="auth-page">
-    <div class="auth-shell">
-      <div class="auth-card">
-        <div class="auth-brand">
-          <span class="brand-mark">S</span>
-          <span>StudeCo</span>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign in – StudeCo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="stylesheet" href="/assets/css/auth.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="auth-page">
+  <div class="auth-container">
+    <div class="auth-card">
+      <a href="/" class="logo" style="justify-content:center;margin-bottom:1.5rem;">
+        <span class="logo-icon">S</span>
+        <span>StudeCo</span>
+      </a>
+      <h1>Welcome back</h1>
+      <p class="text-secondary text-center" style="margin-bottom:1.5rem;">Sign in to continue learning and collaborating.</p>
+
+      <div id="alert" class="alert hidden" role="alert"></div>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label class="form-label" for="email">Email</label>
+          <input type="email" id="email" class="form-input" required autocomplete="email" placeholder="you@school.edu">
         </div>
-        <h1>Welcome back</h1>
-        <p>Sign in to continue learning and connecting.</p>
-
-        <form id="login-form" class="auth-form">
-          <label>
-            Email
-            <input type="email" name="email" required />
-          </label>
-          <label>
-            Password
-            <input type="password" name="password" required />
-          </label>
-          <button type="submit" class="btn btn-primary full">Sign in</button>
-        </form>
-
-        <div class="form-secondary-links">
-          <a href="forgot-password.html">Forgot password?</a>
-          <a href="register.html">Create an account</a>
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <input type="password" id="password" class="form-input" required autocomplete="current-password" placeholder="••••••••">
         </div>
+        <div class="flex justify-between items-center" style="margin-bottom:1.25rem;">
+          <label class="text-sm">
+            <input type="checkbox" id="remember"> Remember me
+          </label>
+          <a href="/forgot-password.html" class="text-sm">Forgot password?</a>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;" id="submitBtn">
+          Sign in
+        </button>
+      </form>
 
-        <div id="auth-message" class="form-message"></div>
-      </div>
+      <p class="text-center text-sm text-secondary" style="margin-top:1.5rem;">
+        Don't have an account? <a href="/register.html">Create one</a>
+      </p>
     </div>
+  </div>
 
-    <script type="module" src="js/auth.js"></script>
-  </body>
+  <script type="module">
+    import { getSupabase } from '/js/supabase-client.js';
+    import { CONFIG } from '/js/config.js';
+
+    const form = document.getElementById('loginForm');
+    const alertEl = document.getElementById('alert');
+    const submitBtn = document.getElementById('submitBtn');
+
+    function showAlert(message, type = 'danger') {
+      alertEl.textContent = message;
+      alertEl.className = `alert alert-${type}`;
+      alertEl.classList.remove('hidden');
+    }
+
+    // Check if already logged in
+    const supabase = getSupabase();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      window.location.href = CONFIG.ROUTES.app;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner"></span>';
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        showAlert(error.message === 'Invalid login credentials'
+          ? 'Invalid email or password. Please try again.'
+          : error.message);
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Sign in';
+        return;
+      }
+
+      // Check if email verified
+      if (data.user && !data.user.email_confirmed_at) {
+        showAlert('Please verify your email before signing in. Check your inbox.', 'warning');
+        await supabase.auth.signOut();
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Sign in';
+        return;
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const returnTo = params.get('returnTo') || CONFIG.ROUTES.app;
+      window.location.href = returnTo;
+    });
+  </script>
+</body>
 </html>

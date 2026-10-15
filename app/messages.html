@@ -1,46 +1,364 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Messages | StudeCo</title>
-    <link rel="stylesheet" href="../assets/css/styles.css" />
-  </head>
-  <body>
-    <div class="app-layout">
-      <aside class="sidebar">
-        <div class="brand">
-          <span class="brand-mark">S</span>
-          <span>StudeCo</span>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Messages – StudeCo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="stylesheet" href="/assets/css/app.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header"><a href="/app/" class="logo"><span class="logo-icon">S</span><span>StudeCo</span></a></div>
+      <nav class="sidebar-nav" id="sidebarNav"></nav>
+      <div class="sidebar-footer"><button class="btn btn-ghost" id="signOutBtn" style="width:100%;">Sign out</button></div>
+    </aside>
+    <div class="main-area">
+      <header class="topbar">
+        <button class="btn btn-ghost btn-icon mobile-sidebar-btn" id="sidebarToggle">☰</button>
+        <h2 style="font-size:1.125rem;margin:0;flex:1;">Messages</h2>
+        <div class="topbar-actions">
+          <button class="btn btn-primary btn-sm" id="newMsgBtn">New</button>
+          <button class="btn btn-ghost btn-icon" id="themeToggle">🌓</button>
+          <span class="avatar" id="userAvatar">?</span>
         </div>
-        <nav class="sidebar-nav">
-          <a href="feed.html">Home</a>
-          <a href="groups.html">Groups</a>
-          <a href="resources.html">Resources</a>
-          <a class="active" href="messages.html">Messages</a>
-          <a href="notifications.html">Notifications</a>
-          <a href="events.html">Events</a>
-          <a href="opportunities.html">Opportunities</a>
-          <a href="profile.html">Profile</a>
-          <a href="settings.html">Settings</a>
-        </nav>
-      </aside>
-
-      <main class="main-panel">
-        <section class="card">
-          <h1>Messages</h1>
-          <div class="message-thread">
-            <div class="message-row incoming">
-              <strong>Sam</strong>
-              <p>Can you share the notes for tomorrow’s lecture?</p>
-            </div>
-            <div class="message-row outgoing">
-              <strong>You</strong>
-              <p>Yes — I’ll send them shortly.</p>
+      </header>
+      <main class="content messages-layout" style="max-width:960px;padding:0;">
+        <div class="msg-sidebar" id="convList">
+          <div class="loading-state"><div class="spinner"></div></div>
+        </div>
+        <div class="msg-main" id="msgMain">
+          <div class="empty-state" id="msgPlaceholder">
+            <h3>Select a conversation</h3>
+            <p class="text-muted">Or start a new message</p>
+          </div>
+          <div id="chatView" class="hidden" style="display:flex;flex-direction:column;height:100%;">
+            <div class="chat-header" id="chatHeader"></div>
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input">
+              <input type="text" class="form-input" id="msgInput" placeholder="Type a message…" autocomplete="off">
+              <button class="btn btn-primary" id="sendBtn">Send</button>
             </div>
           </div>
-        </section>
+        </div>
       </main>
     </div>
-  </body>
+  </div>
+
+  <!-- New conversation modal -->
+  <div class="modal-overlay hidden" id="newMsgModal">
+    <div class="modal" style="max-width:400px;">
+      <div class="modal-header">
+        <h3>New message</h3>
+        <button class="btn btn-ghost btn-icon" id="closeNewMsg">×</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Search students</label>
+        <input type="search" class="form-input" id="userSearch" placeholder="Name or username…">
+      </div>
+      <div id="userResults" style="max-height:240px;overflow-y:auto;"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { getSupabase } from '/js/supabase-client.js';
+    import { initShell, renderSidebarNav } from '/js/components/shell.js';
+    import { escapeHtml, formatRelative, showToast } from '/js/utils/dom.js';
+
+    document.getElementById('sidebarNav').innerHTML = renderSidebarNav('messages');
+    const { user } = await initShell('messages');
+    const supabase = getSupabase();
+
+    let currentConvId = null;
+    let realtimeChannel = null;
+
+    async function loadConversations() {
+      const list = document.getElementById('convList');
+      // Get memberships
+      const { data: memberships } = await supabase
+        .from('conversation_members')
+        .select('conversation_id, last_read_at, conversations(id, conversation_type, title, last_message_at, created_at)')
+        .eq('user_id', user.id)
+        .order('joined_at', { ascending: false });
+
+      if (!memberships?.length) {
+        list.innerHTML = '<div class="empty-state" style="padding:2rem;"><p class="text-muted text-sm">No conversations yet</p></div>';
+        return;
+      }
+
+      // Enrich with other member names for direct chats
+      const convIds = memberships.map(m => m.conversation_id);
+      const { data: allMembers } = await supabase
+        .from('conversation_members')
+        .select('conversation_id, user_id, profiles:user_id(display_name, avatar_url)')
+        .in('conversation_id', convIds);
+
+      // Last messages
+      const { data: lastMsgs } = await supabase
+        .from('messages')
+        .select('conversation_id, content, created_at, sender_id')
+        .in('conversation_id', convIds)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false });
+
+      const lastByConv = {};
+      (lastMsgs || []).forEach(m => {
+        if (!lastByConv[m.conversation_id]) lastByConv[m.conversation_id] = m;
+      });
+
+      list.innerHTML = memberships.map(m => {
+        const conv = m.conversations;
+        if (!conv) return '';
+        const others = (allMembers || []).filter(x => x.conversation_id === m.conversation_id && x.user_id !== user.id);
+        const title = conv.title || others.map(o => o.profiles?.display_name).filter(Boolean).join(', ') || 'Conversation';
+        const last = lastByConv[m.conversation_id];
+        return `
+          <button class="conv-item ${currentConvId === conv.id ? 'active' : ''}" data-id="${conv.id}">
+            <span class="avatar" style="width:40px;height:40px;font-size:0.875rem;">${(title[0] || '?').toUpperCase()}</span>
+            <div style="flex:1;min-width:0;text-align:left;">
+              <div class="font-semibold text-sm" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(title)}</div>
+              <div class="text-muted text-xs" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                ${last ? escapeHtml(last.content?.slice(0, 50) || '') : 'No messages'}
+              </div>
+            </div>
+            <span class="text-xs text-muted">${last ? formatRelative(last.created_at) : ''}</span>
+          </button>
+        `;
+      }).join('');
+
+      list.querySelectorAll('.conv-item').forEach(el => {
+        el.addEventListener('click', () => openConversation(el.dataset.id));
+      });
+    }
+
+    async function openConversation(convId) {
+      currentConvId = convId;
+      document.getElementById('msgPlaceholder').classList.add('hidden');
+      const chatView = document.getElementById('chatView');
+      chatView.classList.remove('hidden');
+      chatView.style.display = 'flex';
+
+      // Header
+      const { data: members } = await supabase
+        .from('conversation_members')
+        .select('user_id, profiles:user_id(display_name)')
+        .eq('conversation_id', convId);
+      const others = (members || []).filter(m => m.user_id !== user.id);
+      const title = others.map(o => o.profiles?.display_name).filter(Boolean).join(', ') || 'Chat';
+      document.getElementById('chatHeader').innerHTML = `<strong>${escapeHtml(title)}</strong>`;
+
+      await loadMessages(convId);
+      subscribeRealtime(convId);
+      loadConversations(); // refresh active state
+    }
+
+    async function loadMessages(convId) {
+      const box = document.getElementById('chatMessages');
+      const { data, error } = await supabase
+        .from('messages')
+        .select('id, content, sender_id, created_at, message_type, profiles:sender_id(display_name)')
+        .eq('conversation_id', convId)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: true })
+        .limit(100);
+
+      if (error) {
+        box.innerHTML = `<div class="alert alert-danger">${escapeHtml(error.message)}</div>`;
+        return;
+      }
+
+      box.innerHTML = (data || []).map(m => {
+        const mine = m.sender_id === user.id;
+        return `
+          <div class="msg-bubble ${mine ? 'mine' : 'theirs'}">
+            ${!mine ? `<div class="text-xs text-muted" style="margin-bottom:0.15rem;">${escapeHtml(m.profiles?.display_name || '')}</div>` : ''}
+            <div>${escapeHtml(m.content || '')}</div>
+            <div class="msg-time">${formatRelative(m.created_at)}</div>
+          </div>
+        `;
+      }).join('');
+      box.scrollTop = box.scrollHeight;
+
+      // Mark read
+      await supabase.from('conversation_members')
+        .update({ last_read_at: new Date().toISOString() })
+        .eq('conversation_id', convId)
+        .eq('user_id', user.id);
+    }
+
+    function subscribeRealtime(convId) {
+      if (realtimeChannel) supabase.removeChannel(realtimeChannel);
+      realtimeChannel = supabase
+        .channel(`messages:${convId}`)
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${convId}`
+        }, (payload) => {
+          if (payload.new.sender_id !== user.id) loadMessages(convId);
+        })
+        .subscribe();
+    }
+
+    document.getElementById('sendBtn').addEventListener('click', sendMessage);
+    document.getElementById('msgInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+
+    async function sendMessage() {
+      const input = document.getElementById('msgInput');
+      const content = input.value.trim();
+      if (!content || !currentConvId) return;
+      input.value = '';
+      const { error } = await supabase.from('messages').insert({
+        conversation_id: currentConvId,
+        sender_id: user.id,
+        content,
+        message_type: 'text'
+      });
+      if (error) {
+        showToast(error.message, 'error');
+        input.value = content;
+        return;
+      }
+      await supabase.from('conversations')
+        .update({ last_message_at: new Date().toISOString() })
+        .eq('id', currentConvId);
+      loadMessages(currentConvId);
+      loadConversations();
+    }
+
+    // New conversation
+    const newModal = document.getElementById('newMsgModal');
+    document.getElementById('newMsgBtn').onclick = () => newModal.classList.remove('hidden');
+    document.getElementById('closeNewMsg').onclick = () => newModal.classList.add('hidden');
+
+    document.getElementById('userSearch').addEventListener('input', async (e) => {
+      const q = e.target.value.trim();
+      const results = document.getElementById('userResults');
+      if (q.length < 2) { results.innerHTML = ''; return; }
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, display_name, username, school_name')
+        .or(`display_name.ilike.%${q}%,username.ilike.%${q}%`)
+        .neq('id', user.id)
+        .limit(10);
+      results.innerHTML = (data || []).map(p => `
+        <button class="conv-item" data-uid="${p.id}" style="width:100%;">
+          <span class="avatar" style="width:36px;height:36px;">${(p.display_name || '?')[0].toUpperCase()}</span>
+          <div style="text-align:left;">
+            <div class="font-semibold text-sm">${escapeHtml(p.display_name)}</div>
+            <div class="text-muted text-xs">${escapeHtml(p.school_name || p.username || '')}</div>
+          </div>
+        </button>
+      `).join('') || '<p class="text-muted text-sm">No users found</p>';
+
+      results.querySelectorAll('[data-uid]').forEach(btn => {
+        btn.addEventListener('click', () => startConversation(btn.dataset.uid));
+      });
+    });
+
+    async function startConversation(otherId) {
+      // Check existing direct conversation
+      const { data: myConvs } = await supabase
+        .from('conversation_members')
+        .select('conversation_id')
+        .eq('user_id', user.id);
+      const myIds = (myConvs || []).map(c => c.conversation_id);
+      if (myIds.length) {
+        const { data: shared } = await supabase
+          .from('conversation_members')
+          .select('conversation_id, conversations(conversation_type)')
+          .eq('user_id', otherId)
+          .in('conversation_id', myIds);
+        const existing = (shared || []).find(s => s.conversations?.conversation_type === 'direct');
+        if (existing) {
+          newModal.classList.add('hidden');
+          openConversation(existing.conversation_id);
+          return;
+        }
+      }
+
+      const { data: conv, error } = await supabase.from('conversations').insert({
+        conversation_type: 'direct',
+        created_by: user.id
+      }).select().single();
+      if (error) { showToast(error.message, 'error'); return; }
+
+      await supabase.from('conversation_members').insert([
+        { conversation_id: conv.id, user_id: user.id },
+        { conversation_id: conv.id, user_id: otherId }
+      ]);
+
+      newModal.classList.add('hidden');
+      await loadConversations();
+      openConversation(conv.id);
+    }
+
+    loadConversations();
+  </script>
+  <style>
+    .messages-layout {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      height: calc(100vh - var(--header-height));
+    }
+    .msg-sidebar {
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      background: var(--bg-secondary);
+    }
+    .conv-item {
+      display: flex; align-items: center; gap: 0.75rem;
+      width: 100%; padding: 0.75rem 1rem; border: none; background: none;
+      cursor: pointer; border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    .conv-item:hover, .conv-item.active { background: var(--bg); }
+    .msg-main { display: flex; flex-direction: column; height: 100%; background: var(--bg); }
+    .chat-header {
+      padding: 0.875rem 1.25rem; border-bottom: 1px solid var(--border);
+      font-weight: 600;
+    }
+    .chat-messages {
+      flex: 1; overflow-y: auto; padding: 1rem 1.25rem;
+      display: flex; flex-direction: column; gap: 0.5rem;
+    }
+    .msg-bubble {
+      max-width: 75%; padding: 0.5rem 0.875rem; border-radius: 1rem;
+      font-size: 0.9375rem; line-height: 1.4;
+    }
+    .msg-bubble.mine {
+      align-self: flex-end; background: var(--primary-600); color: white;
+      border-bottom-right-radius: 0.25rem;
+    }
+    .msg-bubble.theirs {
+      align-self: flex-start; background: var(--bg-tertiary);
+      border-bottom-left-radius: 0.25rem;
+    }
+    .msg-time { font-size: 0.65rem; opacity: 0.7; margin-top: 0.2rem; }
+    .chat-input {
+      display: flex; gap: 0.5rem; padding: 0.75rem 1rem;
+      border-top: 1px solid var(--border);
+    }
+    .chat-input .form-input { flex: 1; }
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200;
+      display: flex; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .modal {
+      background: var(--bg); border-radius: var(--radius-xl); width: 100%;
+      box-shadow: var(--shadow-xl); padding: 1.5rem;
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    @media (max-width: 700px) {
+      .messages-layout { grid-template-columns: 1fr; }
+      .msg-sidebar { max-height: 40vh; }
+    }
+  </style>
+</body>
 </html>

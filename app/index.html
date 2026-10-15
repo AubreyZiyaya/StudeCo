@@ -1,51 +1,321 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>StudeCo App</title>
-    <link rel="stylesheet" href="../assets/css/styles.css" />
-  </head>
-  <body>
-    <div class="app-layout">
-      <aside class="sidebar">
-        <div class="brand">
-          <span class="brand-mark">S</span>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home – StudeCo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="stylesheet" href="/assets/css/app.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="app-shell" id="appShell">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="/app/" class="logo">
+          <span class="logo-icon">S</span>
           <span>StudeCo</span>
+        </a>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/app/" class="nav-item active"><span class="nav-icon">🏠</span> Home</a>
+        <a href="/app/groups.html" class="nav-item"><span class="nav-icon">👥</span> Groups</a>
+        <a href="/app/resources.html" class="nav-item"><span class="nav-icon">📚</span> Resources</a>
+        <a href="/app/messages.html" class="nav-item"><span class="nav-icon">💬</span> Messages <span class="badge" id="msgBadge" hidden>0</span></a>
+        <a href="/app/events.html" class="nav-item"><span class="nav-icon">📅</span> Events</a>
+        <a href="/app/opportunities.html" class="nav-item"><span class="nav-icon">🎯</span> Opportunities</a>
+        <a href="/app/notifications.html" class="nav-item"><span class="nav-icon">🔔</span> Notifications <span class="badge" id="notifBadge" hidden>0</span></a>
+        <a href="/app/profile.html" class="nav-item"><span class="nav-icon">👤</span> Profile</a>
+        <a href="/app/settings.html" class="nav-item"><span class="nav-icon">⚙️</span> Settings</a>
+        <a href="/admin/" class="nav-item admin-link" id="adminLink" hidden><span class="nav-icon">🛡️</span> Admin</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="btn btn-ghost" id="signOutBtn" style="width:100%;">Sign out</button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <div class="main-area">
+      <header class="topbar">
+        <button class="btn btn-ghost btn-icon mobile-sidebar-btn" id="sidebarToggle" aria-label="Toggle menu">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <div class="search-bar">
+          <input type="search" class="form-input" placeholder="Search posts, groups, resources…" id="globalSearch">
         </div>
-        <nav class="sidebar-nav">
-          <a class="active" href="feed.html">Home</a>
-          <a href="profile.html">Profile</a>
-          <a href="groups.html">Groups</a>
-          <a href="resources.html">Resources</a>
-          <a href="messages.html">Messages</a>
-          <a href="notifications.html">Notifications</a>
-          <a href="events.html">Events</a>
-          <a href="opportunities.html">Opportunities</a>
-          <a href="settings.html">Settings</a>
-        </nav>
-      </aside>
+        <div class="topbar-actions">
+          <button class="btn btn-ghost btn-icon" id="themeToggle" aria-label="Toggle dark mode">🌓</button>
+          <div class="user-menu" id="userMenu">
+            <button class="avatar-btn" id="avatarBtn">
+              <span class="avatar" id="userAvatar">?</span>
+            </button>
+          </div>
+        </div>
+      </header>
 
-      <main class="main-panel">
-        <header class="topbar">
-          <div class="search-box">
-            <input type="search" placeholder="Search students, groups, resources..." />
+      <main class="content">
+        <!-- Create Post -->
+        <div class="card" style="margin-bottom:1.5rem;">
+          <div class="card-body">
+            <div class="composer" id="composer">
+              <textarea class="form-textarea" id="postContent" rows="3" placeholder="Share something with your academic community…"></textarea>
+              <div id="uploadNotice" class="hidden" style="margin-top:0.75rem;"></div>
+              <div class="composer-actions">
+                <div class="composer-tools">
+                  <label class="btn btn-ghost btn-sm" title="Add image">
+                    🖼️ <input type="file" id="postImage" accept="image/*" hidden multiple>
+                  </label>
+                  <label class="btn btn-ghost btn-sm" title="Add document">
+                    📎 <input type="file" id="postDoc" accept=".pdf,.doc,.docx,.ppt,.pptx" hidden>
+                  </label>
+                </div>
+                <button class="btn btn-primary btn-sm" id="postBtn">Post</button>
+              </div>
+              <div id="selectedFiles" class="selected-files"></div>
+            </div>
           </div>
-          <div class="topbar-actions">
-            <button class="btn btn-secondary">Notifications</button>
-            <button class="btn btn-primary">Create post</button>
-          </div>
-        </header>
+        </div>
 
-        <section class="page-shell">
-          <h1>Dashboard</h1>
-          <div class="card-grid">
-            <div class="info-card"><strong>47</strong><span>Friends</span></div>
-            <div class="info-card"><strong>12</strong><span>Groups</span></div>
-            <div class="info-card"><strong>8</strong><span>Resources</span></div>
+        <!-- Feed -->
+        <div id="feed" class="feed">
+          <div class="loading-state" id="feedLoading">
+            <div class="spinner"></div>
+            <p class="text-muted">Loading feed…</p>
           </div>
-        </section>
+        </div>
       </main>
     </div>
-  </body>
+  </div>
+
+  <script type="module">
+    import { requireAuth, signOut, getSupabase } from '/js/supabase-client.js';
+    import { getProfile, isAdmin } from '/js/services/auth-service.js';
+    import { getUploadAvailability, validateFile, getValidationMessage, uploadFile, renderUnavailableNotice, clearUploadCache } from '/js/services/upload-service.js';
+
+    const user = await requireAuth();
+    if (!user) throw new Error('Auth required');
+
+    const profile = await getProfile();
+    const admin = await isAdmin();
+
+    // UI setup
+    if (profile) {
+      document.getElementById('userAvatar').textContent = (profile.display_name || '?')[0].toUpperCase();
+    }
+    if (admin) {
+      document.getElementById('adminLink').hidden = false;
+    }
+
+    document.getElementById('signOutBtn').addEventListener('click', () => signOut());
+    document.getElementById('sidebarToggle').addEventListener('click', () => {
+      document.getElementById('sidebar').classList.toggle('open');
+    });
+
+    // Theme
+    const themeToggle = document.getElementById('themeToggle');
+    themeToggle.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme');
+      document.documentElement.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+      localStorage.setItem('studeco-theme', current === 'dark' ? 'light' : 'dark');
+    });
+    if (localStorage.getItem('studeco-theme') === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+
+    // Upload availability for composer
+    const availability = await getUploadAvailability();
+    const noticeEl = document.getElementById('uploadNotice');
+    if (!availability.uploads_enabled || availability.state !== 'AVAILABLE') {
+      noticeEl.classList.remove('hidden');
+      renderUnavailableNotice(availability, noticeEl);
+    }
+
+    window.addEventListener('studeco:uploads-restored', () => {
+      noticeEl.classList.add('hidden');
+      noticeEl.innerHTML = '';
+    });
+
+    // File selection
+    const selectedFiles = [];
+    function updateSelectedFilesUI() {
+      const el = document.getElementById('selectedFiles');
+      el.innerHTML = selectedFiles.map((f, i) =>
+        `<span class="file-chip">${f.name} <button type="button" data-idx="${i}">×</button></span>`
+      ).join('');
+      el.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          selectedFiles.splice(+btn.dataset.idx, 1);
+          updateSelectedFilesUI();
+        });
+      });
+    }
+
+    document.getElementById('postImage').addEventListener('change', (e) => {
+      for (const file of e.target.files) {
+        const v = validateFile(file, availability);
+        if (!v.allowed) {
+          alert(getValidationMessage(v.reason, availability));
+          continue;
+        }
+        selectedFiles.push(file);
+      }
+      updateSelectedFilesUI();
+      e.target.value = '';
+    });
+
+    document.getElementById('postDoc').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const v = validateFile(file, availability);
+      if (!v.allowed) {
+        alert(getValidationMessage(v.reason, availability));
+        return;
+      }
+      selectedFiles.push(file);
+      updateSelectedFilesUI();
+      e.target.value = '';
+    });
+
+    // Create post
+    document.getElementById('postBtn').addEventListener('click', async () => {
+      const content = document.getElementById('postContent').value.trim();
+      if (!content && selectedFiles.length === 0) return;
+
+      const btn = document.getElementById('postBtn');
+      btn.disabled = true;
+      btn.textContent = 'Posting…';
+
+      const supabase = getSupabase();
+      let mediaUrls = [];
+
+      for (const file of selectedFiles) {
+        const result = await uploadFile(file, { category: 'post_media', isPublic: true });
+        if (!result.success) {
+          alert(result.error);
+          // Preserve the form content – do not clear
+          btn.disabled = false;
+          btn.textContent = 'Post';
+          // Refresh availability in case quota was hit
+          const fresh = await getUploadAvailability(true);
+          if (!fresh.uploads_enabled) {
+            noticeEl.classList.remove('hidden');
+            renderUnavailableNotice(fresh, noticeEl);
+          }
+          return;
+        }
+        mediaUrls.push(result);
+      }
+
+      const { data: post, error } = await supabase.from('posts').insert({
+        author_id: user.id,
+        content,
+        post_type: mediaUrls.length ? (mediaUrls[0].mimeType?.startsWith('image/') ? 'image' : 'link') : 'text',
+        visibility: 'public'
+      }).select().single();
+
+      if (error) {
+        alert('Failed to create post: ' + error.message);
+        btn.disabled = false;
+        btn.textContent = 'Post';
+        return;
+      }
+
+      // Attach media records
+      for (const m of mediaUrls) {
+        await supabase.from('post_media').insert({
+          post_id: post.id,
+          file_id: m.fileId,
+          media_type: m.mimeType?.startsWith('image/') ? 'image' : 'document',
+          url: m.url,
+          mime_type: m.mimeType,
+          size_bytes: m.size
+        });
+      }
+
+      document.getElementById('postContent').value = '';
+      selectedFiles.length = 0;
+      updateSelectedFilesUI();
+      btn.disabled = false;
+      btn.textContent = 'Post';
+      loadFeed();
+    });
+
+    // Load feed
+    async function loadFeed() {
+      const feedEl = document.getElementById('feed');
+      const loading = document.getElementById('feedLoading');
+      const supabase = getSupabase();
+
+      const { data: posts, error } = await supabase
+        .from('posts')
+        .select(`
+          id, content, post_type, created_at, reaction_count, comment_count,
+          profiles:author_id (id, display_name, avatar_url, education_level),
+          post_media (url, media_type, mime_type)
+        `)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      loading?.remove();
+
+      if (error) {
+        feedEl.innerHTML = `<div class="alert alert-danger">Failed to load feed: ${error.message}</div>`;
+        return;
+      }
+
+      if (!posts?.length) {
+        feedEl.innerHTML = `
+          <div class="empty-state">
+            <h3>No posts yet</h3>
+            <p class="text-muted">Be the first to share something with your community.</p>
+          </div>`;
+        return;
+      }
+
+      feedEl.innerHTML = posts.map(p => `
+        <article class="card post-card">
+          <div class="card-body">
+            <div class="post-header">
+              <span class="avatar">${(p.profiles?.display_name || '?')[0].toUpperCase()}</span>
+              <div>
+                <strong>${escapeHtml(p.profiles?.display_name || 'Student')}</strong>
+                <span class="text-muted text-sm"> · ${formatRelative(p.created_at)}</span>
+              </div>
+            </div>
+            <div class="post-content">${escapeHtml(p.content || '')}</div>
+            ${p.post_media?.length ? p.post_media.map(m =>
+              m.media_type === 'image'
+                ? `<img src="${m.url}" alt="" class="post-image" loading="lazy">`
+                : `<a href="${m.url}" target="_blank" class="post-file">📎 Attachment</a>`
+            ).join('') : ''}
+            <div class="post-actions">
+              <button class="btn btn-ghost btn-sm react-btn" data-id="${p.id}">👍 ${p.reaction_count || 0}</button>
+              <button class="btn btn-ghost btn-sm">💬 ${p.comment_count || 0}</button>
+            </div>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    function escapeHtml(str) {
+      const d = document.createElement('div');
+      d.textContent = str || '';
+      return d.innerHTML;
+    }
+
+    function formatRelative(iso) {
+      const d = new Date(iso);
+      const diff = (Date.now() - d.getTime()) / 1000;
+      if (diff < 60) return 'just now';
+      if (diff < 3600) return Math.floor(diff / 60) + 'm';
+      if (diff < 86400) return Math.floor(diff / 3600) + 'h';
+      return d.toLocaleDateString();
+    }
+
+    loadFeed();
+  </script>
+</body>
 </html>

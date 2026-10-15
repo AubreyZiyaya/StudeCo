@@ -1,59 +1,291 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Resources | StudeCo</title>
-    <link rel="stylesheet" href="../assets/css/styles.css" />
-  </head>
-  <body>
-    <div class="app-layout">
-      <aside class="sidebar">
-        <div class="brand">
-          <span class="brand-mark">S</span>
-          <span>StudeCo</span>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resources – StudeCo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="stylesheet" href="/assets/css/app.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header"><a href="/app/" class="logo"><span class="logo-icon">S</span><span>StudeCo</span></a></div>
+      <nav class="sidebar-nav" id="sidebarNav"></nav>
+      <div class="sidebar-footer"><button class="btn btn-ghost" id="signOutBtn" style="width:100%;">Sign out</button></div>
+    </aside>
+    <div class="main-area">
+      <header class="topbar">
+        <button class="btn btn-ghost btn-icon mobile-sidebar-btn" id="sidebarToggle">☰</button>
+        <h2 class="topbar-title" style="font-size:1.125rem;margin:0;flex:1;">Academic Resources</h2>
+        <div class="topbar-actions">
+          <button class="btn btn-ghost btn-icon" id="themeToggle">🌓</button>
+          <span class="avatar" id="userAvatar">?</span>
         </div>
-        <nav class="sidebar-nav">
-          <a href="feed.html">Home</a>
-          <a href="groups.html">Groups</a>
-          <a class="active" href="resources.html">Resources</a>
-          <a href="messages.html">Messages</a>
-          <a href="notifications.html">Notifications</a>
-          <a href="events.html">Events</a>
-          <a href="opportunities.html">Opportunities</a>
-          <a href="profile.html">Profile</a>
-          <a href="settings.html">Settings</a>
-        </nav>
-      </aside>
+      </header>
+      <main class="content" style="max-width:900px;">
+        <div class="flex justify-between items-center" style="margin-bottom:1.25rem;flex-wrap:wrap;gap:0.75rem;">
+          <p class="text-secondary text-sm">Lecture notes, past papers, revision guides and more</p>
+          <button class="btn btn-primary" id="uploadResBtn">+ Upload resource</button>
+        </div>
 
-      <main class="main-panel">
-        <header class="topbar">
-          <div class="search-box">
-            <input type="search" placeholder="Search resources, notes, documents..." />
-          </div>
-          <div class="topbar-actions">
-            <button class="btn btn-primary">Upload resource</button>
-          </div>
-        </header>
+        <div id="uploadNotice" class="hidden" style="margin-bottom:1rem;"></div>
 
-        <section class="page-shell">
-          <div class="card">
-            <h1>Academic resource centre</h1>
-            <div class="resource-grid">
-              <article class="resource-item card mini">
-                <h3>Algorithms revision guide</h3>
-                <p>PDF • CS210</p>
-                <button class="btn btn-secondary" type="button">Open</button>
-              </article>
-              <article class="resource-item card mini">
-                <h3>Research methods cheat sheet</h3>
-                <p>PDF • Research</p>
-                <button class="btn btn-secondary" type="button">Open</button>
-              </article>
-            </div>
-          </div>
-        </section>
+        <div class="flex gap-3" style="margin-bottom:1.25rem;flex-wrap:wrap;">
+          <input type="search" class="form-input" id="resSearch" placeholder="Search resources…" style="flex:1;min-width:180px;">
+          <select class="form-select" id="resCategory" style="width:auto;">
+            <option value="">All categories</option>
+          </select>
+          <select class="form-select" id="resLevel" style="width:auto;">
+            <option value="">All levels</option>
+            <option value="secondary">Secondary</option>
+            <option value="university">University</option>
+          </select>
+        </div>
+
+        <div id="resourcesList" class="resources-list"></div>
       </main>
     </div>
-  </body>
+  </div>
+
+  <!-- Upload Modal -->
+  <div class="modal-overlay hidden" id="uploadModal">
+    <div class="modal" style="max-width:480px;">
+      <div class="modal-header">
+        <h3>Upload academic resource</h3>
+        <button class="btn btn-ghost btn-icon" id="closeUploadModal">×</button>
+      </div>
+      <form id="uploadResForm">
+        <div class="form-group">
+          <label class="form-label">Title *</label>
+          <input type="text" id="resTitle" class="form-input" required maxlength="150">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea id="resDesc" class="form-textarea" rows="2" maxlength="500"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select id="resCat" class="form-select"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Subject</label>
+            <input type="text" id="resSubject" class="form-input" placeholder="e.g. Mathematics">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Education level</label>
+          <select id="resEdu" class="form-select">
+            <option value="secondary">Secondary</option>
+            <option value="university">University</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">File * (PDF, images, presentations)</label>
+          <input type="file" id="resFile" class="form-input" required accept=".pdf,.doc,.docx,.ppt,.pptx,image/*">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancelUpload">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="submitUpload">Upload</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import { getSupabase } from '/js/supabase-client.js';
+    import { initShell, renderSidebarNav } from '/js/components/shell.js';
+    import { getUploadAvailability, validateFile, getValidationMessage, uploadFile, renderUnavailableNotice, formatBytes } from '/js/services/upload-service.js';
+    import { escapeHtml, formatRelative, showToast } from '/js/utils/dom.js';
+
+    document.getElementById('sidebarNav').innerHTML = renderSidebarNav('resources');
+    const { user, profile } = await initShell('resources');
+    const supabase = getSupabase();
+
+    // Categories
+    const { data: cats } = await supabase.from('resource_categories').select('*').order('name');
+    const catSelect = document.getElementById('resCategory');
+    const catForm = document.getElementById('resCat');
+    (cats || []).forEach(c => {
+      catSelect.innerHTML += `<option value="${c.id}">${escapeHtml(c.name)}</option>`;
+      catForm.innerHTML += `<option value="${c.id}">${escapeHtml(c.name)}</option>`;
+    });
+
+    // Upload availability
+    let availability = await getUploadAvailability();
+    const noticeEl = document.getElementById('uploadNotice');
+    if (!availability.uploads_enabled || availability.state !== 'AVAILABLE') {
+      noticeEl.classList.remove('hidden');
+      renderUnavailableNotice(availability, noticeEl);
+    }
+
+    async function loadResources() {
+      const list = document.getElementById('resourcesList');
+      list.innerHTML = '<div class="loading-state"><div class="spinner"></div></div>';
+
+      let q = supabase
+        .from('resources')
+        .select(`
+          id, title, description, subject, education_level, mime_type, size_bytes,
+          download_count, created_at, file_url,
+          profiles:uploader_id (display_name),
+          resource_categories (name)
+        `)
+        .eq('is_approved', true)
+        .order('created_at', { ascending: false })
+        .limit(40);
+
+      const search = document.getElementById('resSearch').value.trim();
+      const cat = document.getElementById('resCategory').value;
+      const level = document.getElementById('resLevel').value;
+      if (search) q = q.or(`title.ilike.%${search}%,subject.ilike.%${search}%`);
+      if (cat) q = q.eq('category_id', cat);
+      if (level) q = q.eq('education_level', level);
+
+      const { data, error } = await q;
+      if (error) {
+        list.innerHTML = `<div class="alert alert-danger">${escapeHtml(error.message)}</div>`;
+        return;
+      }
+      if (!data?.length) {
+        list.innerHTML = '<div class="empty-state"><h3>No resources found</h3><p class="text-muted">Try different filters or upload one.</p></div>';
+        return;
+      }
+
+      list.innerHTML = data.map(r => `
+        <article class="card resource-card">
+          <div class="card-body flex gap-4">
+            <div class="res-icon">${iconFor(r.mime_type)}</div>
+            <div style="flex:1;min-width:0;">
+              <h3 style="font-size:1rem;margin-bottom:0.25rem;">${escapeHtml(r.title)}</h3>
+              <p class="text-secondary text-sm" style="margin-bottom:0.5rem;">${escapeHtml(r.description || '')}</p>
+              <div class="flex gap-2 flex-wrap text-xs text-muted">
+                ${r.resource_categories?.name ? `<span class="badge">${escapeHtml(r.resource_categories.name)}</span>` : ''}
+                ${r.subject ? `<span>${escapeHtml(r.subject)}</span>` : ''}
+                <span>${escapeHtml(r.education_level || '')}</span>
+                <span>${formatBytes(r.size_bytes || 0)}</span>
+                <span>${r.download_count || 0} downloads</span>
+                <span>by ${escapeHtml(r.profiles?.display_name || 'Student')}</span>
+              </div>
+            </div>
+            <div>
+              ${r.file_url
+                ? `<a href="${escapeHtml(r.file_url)}" target="_blank" rel="noopener" class="btn btn-primary btn-sm" data-id="${r.id}">Download</a>`
+                : '<span class="text-muted text-sm">No file</span>'
+              }
+            </div>
+          </div>
+        </article>
+      `).join('');
+
+      list.querySelectorAll('a[data-id]').forEach(a => {
+        a.addEventListener('click', async () => {
+          await supabase.from('resources').update({
+            download_count: (data.find(x => x.id === a.dataset.id)?.download_count || 0) + 1
+          }).eq('id', a.dataset.id);
+        });
+      });
+    }
+
+    function iconFor(mime) {
+      if (!mime) return '📄';
+      if (mime.startsWith('image/')) return '🖼️';
+      if (mime === 'application/pdf') return '📕';
+      if (mime.includes('presentation') || mime.includes('powerpoint')) return '📊';
+      return '📄';
+    }
+
+    // Filters
+    ['resSearch', 'resCategory', 'resLevel'].forEach(id => {
+      document.getElementById(id).addEventListener('change', loadResources);
+      document.getElementById(id).addEventListener('input', () => {
+        clearTimeout(window._rs);
+        window._rs = setTimeout(loadResources, 300);
+      });
+    });
+
+    // Modal
+    const modal = document.getElementById('uploadModal');
+    document.getElementById('uploadResBtn').onclick = async () => {
+      availability = await getUploadAvailability(true);
+      if (!availability.uploads_enabled || availability.state !== 'AVAILABLE') {
+        noticeEl.classList.remove('hidden');
+        renderUnavailableNotice(availability, noticeEl);
+        showToast('Uploads are currently unavailable', 'warning');
+        return;
+      }
+      modal.classList.remove('hidden');
+    };
+    document.getElementById('closeUploadModal').onclick = () => modal.classList.add('hidden');
+    document.getElementById('cancelUpload').onclick = () => modal.classList.add('hidden');
+
+    document.getElementById('uploadResForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const file = document.getElementById('resFile').files[0];
+      if (!file) return;
+
+      const btn = document.getElementById('submitUpload');
+      btn.disabled = true;
+      btn.textContent = 'Uploading…';
+
+      const result = await uploadFile(file, { category: 'resource', isPublic: true });
+      if (!result.success) {
+        showToast(result.error, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Upload';
+        if (result.code === 'quota_exceeded' || result.code === 'uploads_disabled') {
+          availability = await getUploadAvailability(true);
+          noticeEl.classList.remove('hidden');
+          renderUnavailableNotice(availability, noticeEl);
+          modal.classList.add('hidden');
+        }
+        return;
+      }
+
+      const { error } = await supabase.from('resources').insert({
+        uploader_id: user.id,
+        title: document.getElementById('resTitle').value.trim(),
+        description: document.getElementById('resDesc').value.trim() || null,
+        category_id: document.getElementById('resCat').value || null,
+        subject: document.getElementById('resSubject').value.trim() || null,
+        education_level: document.getElementById('resEdu').value,
+        file_id: result.fileId,
+        file_url: result.url,
+        mime_type: result.mimeType,
+        size_bytes: result.size,
+        visibility: 'public'
+      });
+
+      if (error) {
+        showToast(error.message, 'error');
+      } else {
+        showToast('Resource uploaded!', 'success');
+        modal.classList.add('hidden');
+        e.target.reset();
+        loadResources();
+      }
+      btn.disabled = false;
+      btn.textContent = 'Upload';
+    });
+
+    loadResources();
+  </script>
+  <style>
+    .resources-list { display: flex; flex-direction: column; gap: 0.75rem; }
+    .res-icon { font-size: 1.75rem; flex-shrink: 0; }
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200;
+      display: flex; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .modal {
+      background: var(--bg); border-radius: var(--radius-xl); width: 100%;
+      box-shadow: var(--shadow-xl); padding: 1.5rem;
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.25rem; }
+  </style>
+</body>
 </html>

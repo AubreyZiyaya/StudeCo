@@ -1,39 +1,69 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin | StudeCo</title>
-    <link rel="stylesheet" href="../assets/css/styles.css" />
-    <link rel="stylesheet" href="../assets/css/admin.css" />
-  </head>
-  <body class="admin-body">
-    <aside class="admin-sidebar">
-      <div class="brand">
-        <span class="brand-mark">S</span>
-        <span>StudeCo Admin</span>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Overview – StudeCo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="stylesheet" href="/assets/css/app.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="/admin/" class="logo">
+          <span class="logo-icon">S</span>
+          <span>Admin</span>
+        </a>
       </div>
-      <nav>
-        <a class="active" href="index.html">Overview</a>
-        <a href="uploads.html">Upload & storage</a>
-        <a href="settings.html">Platform</a>
-        <a href="users.html">Users</a>
-        <a href="reports.html">Reports</a>
-        <a href="analytics.html">Analytics</a>
+      <nav class="sidebar-nav">
+        <a href="/admin/" class="nav-item active">Overview</a>
+        <a href="/admin/uploads.html" class="nav-item">Uploads & Storage</a>
+        <a href="/app/" class="nav-item">← Back to App</a>
       </nav>
     </aside>
-
-    <main class="admin-main">
-      <header class="admin-header">
-        <h1>Dashboard overview</h1>
+    <div class="main-area">
+      <header class="topbar">
+        <h2 style="font-size:1.125rem;margin:0;">Admin Overview</h2>
       </header>
+      <main class="content admin-content">
+        <div class="stats-grid" id="stats">
+          <div class="stat-card"><div class="stat-value" id="sUsers">—</div><div class="stat-label">Users</div></div>
+          <div class="stat-card"><div class="stat-value" id="sPosts">—</div><div class="stat-label">Posts</div></div>
+          <div class="stat-card"><div class="stat-value" id="sGroups">—</div><div class="stat-label">Groups</div></div>
+          <div class="stat-card"><div class="stat-value" id="sResources">—</div><div class="stat-label">Resources</div></div>
+          <div class="stat-card"><div class="stat-value" id="sFiles">—</div><div class="stat-label">Uploaded Files</div></div>
+          <div class="stat-card"><div class="stat-value" id="sReports">—</div><div class="stat-label">Pending Reports</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header">Quick Actions</div>
+          <div class="card-body flex gap-3" style="flex-wrap:wrap;">
+            <a href="/admin/uploads.html" class="btn btn-primary">Manage Uploads & Storage</a>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script type="module">
+    import { requireAdmin, getSupabase } from '/js/supabase-client.js';
+    await requireAdmin();
+    const sb = getSupabase();
 
-      <section class="stats-grid">
-        <div class="stat-card"><strong>1,245</strong><span>Users</span></div>
-        <div class="stat-card"><strong>214</strong><span>Groups</span></div>
-        <div class="stat-card"><strong>73</strong><span>Reports</span></div>
-        <div class="stat-card"><strong>96%</strong><span>Verified students</span></div>
-      </section>
-    </main>
-  </body>
+    async function count(table, filter = {}) {
+      let q = sb.from(table).select('*', { count: 'exact', head: true });
+      for (const [k, v] of Object.entries(filter)) q = q.eq(k, v);
+      const { count } = await q;
+      return count ?? 0;
+    }
+
+    document.getElementById('sUsers').textContent = await count('profiles');
+    document.getElementById('sPosts').textContent = await count('posts', { is_deleted: false });
+    document.getElementById('sGroups').textContent = await count('groups');
+    document.getElementById('sResources').textContent = await count('resources');
+    document.getElementById('sFiles').textContent = await count('uploaded_files', { status: 'active' });
+    document.getElementById('sReports').textContent = await count('reports', { status: 'pending' });
+  </script>
+</body>
 </html>

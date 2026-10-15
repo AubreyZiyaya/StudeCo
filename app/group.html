@@ -1,49 +1,192 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Group Details | StudeCo</title>
-    <link rel="stylesheet" href="../assets/css/styles.css" />
-  </head>
-  <body>
-    <div class="app-layout">
-      <aside class="sidebar">
-        <div class="brand">
-          <span class="brand-mark">S</span>
-          <span>StudeCo</span>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Group – StudeCo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="stylesheet" href="/assets/css/app.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="/app/" class="logo"><span class="logo-icon">S</span><span>StudeCo</span></a>
+      </div>
+      <nav class="sidebar-nav" id="sidebarNav"></nav>
+      <div class="sidebar-footer"><button class="btn btn-ghost" id="signOutBtn" style="width:100%;">Sign out</button></div>
+    </aside>
+    <div class="main-area">
+      <header class="topbar">
+        <button class="btn btn-ghost btn-icon mobile-sidebar-btn" id="sidebarToggle">☰</button>
+        <a href="/app/groups.html" class="text-sm text-secondary">← Groups</a>
+        <div class="topbar-actions" style="margin-left:auto;">
+          <button class="btn btn-ghost btn-icon" id="themeToggle">🌓</button>
+          <span class="avatar" id="userAvatar">?</span>
         </div>
-        <nav class="sidebar-nav">
-          <a href="feed.html">Home</a>
-          <a href="groups.html">Groups</a>
-          <a class="active" href="group.html">Group</a>
-          <a href="resources.html">Resources</a>
-          <a href="messages.html">Messages</a>
-          <a href="notifications.html">Notifications</a>
-          <a href="events.html">Events</a>
-          <a href="opportunities.html">Opportunities</a>
-          <a href="profile.html">Profile</a>
-        </nav>
-      </aside>
-
-      <main class="main-panel">
-        <section class="profile-header card">
-          <div>
-            <p class="eyebrow">group</p>
-            <h1>Computer Science Society</h1>
-            <p>Private collaboration space for students in software engineering and research.</p>
+      </header>
+      <main class="content" style="max-width:720px;">
+        <div id="groupHeader" class="card" style="margin-bottom:1.5rem;">
+          <div class="card-body">
+            <div class="loading-state"><div class="spinner"></div></div>
           </div>
-        </section>
-
-        <section class="card">
-          <h2>Announcements</h2>
-          <ul class="profile-stat-list">
-            <li>Hackathon planning meeting — Friday 5:00 PM</li>
-            <li>Research collaboration sign-up — open until Thursday</li>
-            <li>Revision workshop — hosted by CS mentors</li>
-          </ul>
-        </section>
+        </div>
+        <div class="card" style="margin-bottom:1rem;" id="composerCard" hidden>
+          <div class="card-body">
+            <textarea class="form-textarea" id="groupPostContent" rows="2" placeholder="Share with the group…"></textarea>
+            <div class="flex justify-between" style="margin-top:0.75rem;">
+              <span></span>
+              <button class="btn btn-primary btn-sm" id="groupPostBtn">Post</button>
+            </div>
+          </div>
+        </div>
+        <div id="groupFeed"></div>
       </main>
     </div>
-  </body>
+  </div>
+  <script type="module">
+    import { getSupabase } from '/js/supabase-client.js';
+    import { initShell, renderSidebarNav } from '/js/components/shell.js';
+    import { escapeHtml, formatRelative, showToast, getQueryParam } from '/js/utils/dom.js';
+
+    document.getElementById('sidebarNav').innerHTML = renderSidebarNav('groups');
+    const { user } = await initShell('groups');
+    const supabase = getSupabase();
+    const groupId = getQueryParam('id');
+    if (!groupId) { window.location.href = '/app/groups.html'; throw new Error('No group'); }
+
+    let membership = null;
+    let group = null;
+
+    async function loadGroup() {
+      const { data, error } = await supabase
+        .from('groups')
+        .select('*')
+        .eq('id', groupId)
+        .single();
+      if (error || !data) {
+        document.getElementById('groupHeader').innerHTML = '<div class="card-body"><div class="alert alert-danger">Group not found or access denied.</div></div>';
+        return;
+      }
+      group = data;
+
+      const { data: mem } = await supabase
+        .from('group_memberships')
+        .select('*')
+        .eq('group_id', groupId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      membership = mem;
+
+      const isMember = membership?.status === 'active';
+      document.getElementById('composerCard').hidden = !isMember;
+
+      document.getElementById('groupHeader').innerHTML = `
+        <div class="card-body">
+          <div class="flex items-center gap-4">
+            <div class="group-avatar" style="width:64px;height:64px;font-size:1.5rem;border-radius:16px;background:linear-gradient(135deg,var(--primary-500),var(--primary-700));color:white;display:flex;align-items:center;justify-content:center;font-weight:700;">
+              ${escapeHtml((group.name || '?')[0].toUpperCase())}
+            </div>
+            <div style="flex:1;">
+              <h1 style="font-size:1.375rem;margin-bottom:0.25rem;">${escapeHtml(group.name)}</h1>
+              <p class="text-secondary text-sm">${escapeHtml(group.description || '')}</p>
+              <div class="flex gap-2" style="margin-top:0.5rem;">
+                <span class="badge">${escapeHtml(group.group_type)}</span>
+                <span class="text-muted text-sm">${group.member_count || 0} members</span>
+              </div>
+            </div>
+            <div>
+              ${isMember
+                ? (membership.role === 'admin'
+                    ? '<span class="badge badge-info">Admin</span>'
+                    : `<button class="btn btn-secondary btn-sm" id="leaveBtn">Leave</button>`)
+                : `<button class="btn btn-primary btn-sm" id="joinBtn">Join</button>`
+              }
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('joinBtn')?.addEventListener('click', async () => {
+        const status = group.group_type === 'private' ? 'pending' : 'active';
+        const { error } = await supabase.from('group_memberships').insert({
+          group_id: groupId, user_id: user.id, role: 'member', status
+        });
+        if (error) showToast(error.message, 'error');
+        else { showToast(status === 'pending' ? 'Request sent' : 'Joined!', 'success'); loadGroup(); loadFeed(); }
+      });
+
+      document.getElementById('leaveBtn')?.addEventListener('click', async () => {
+        if (!confirm('Leave this group?')) return;
+        await supabase.from('group_memberships').delete().eq('group_id', groupId).eq('user_id', user.id);
+        showToast('Left group');
+        loadGroup();
+      });
+    }
+
+    async function loadFeed() {
+      const feed = document.getElementById('groupFeed');
+      const { data: posts, error } = await supabase
+        .from('posts')
+        .select(`
+          id, content, created_at, reaction_count, comment_count,
+          profiles:author_id (display_name, avatar_url)
+        `)
+        .eq('group_id', groupId)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false })
+        .limit(30);
+
+      if (error) {
+        feed.innerHTML = `<div class="alert alert-danger">${escapeHtml(error.message)}</div>`;
+        return;
+      }
+      if (!posts?.length) {
+        feed.innerHTML = '<div class="empty-state"><p class="text-muted">No posts in this group yet.</p></div>';
+        return;
+      }
+      feed.innerHTML = posts.map(p => `
+        <article class="card post-card">
+          <div class="card-body">
+            <div class="post-header">
+              <span class="avatar">${(p.profiles?.display_name || '?')[0].toUpperCase()}</span>
+              <div>
+                <strong>${escapeHtml(p.profiles?.display_name || 'Student')}</strong>
+                <span class="text-muted text-sm"> · ${formatRelative(p.created_at)}</span>
+              </div>
+            </div>
+            <div class="post-content">${escapeHtml(p.content || '')}</div>
+            <div class="post-actions">
+              <button class="btn btn-ghost btn-sm">👍 ${p.reaction_count || 0}</button>
+              <button class="btn btn-ghost btn-sm">💬 ${p.comment_count || 0}</button>
+            </div>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    document.getElementById('groupPostBtn')?.addEventListener('click', async () => {
+      const content = document.getElementById('groupPostContent').value.trim();
+      if (!content) return;
+      const { error } = await supabase.from('posts').insert({
+        author_id: user.id,
+        content,
+        group_id: groupId,
+        visibility: 'group',
+        post_type: 'text'
+      });
+      if (error) showToast(error.message, 'error');
+      else {
+        document.getElementById('groupPostContent').value = '';
+        showToast('Posted!', 'success');
+        loadFeed();
+      }
+    });
+
+    await loadGroup();
+    await loadFeed();
+  </script>
+</body>
 </html>

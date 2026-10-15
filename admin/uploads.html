@@ -1,46 +1,333 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Upload & Storage | StudeCo Admin</title>
-    <link rel="stylesheet" href="../assets/css/styles.css" />
-    <link rel="stylesheet" href="../assets/css/admin.css" />
-  </head>
-  <body class="admin-body">
-    <aside class="admin-sidebar">
-      <div class="brand">
-        <span class="brand-mark">S</span>
-        <span>StudeCo Admin</span>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload & Storage Control – StudeCo Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="stylesheet" href="/assets/css/app.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="/admin/" class="logo">
+          <span class="logo-icon">S</span>
+          <span>Admin</span>
+        </a>
       </div>
-      <nav>
-        <a href="index.html">Overview</a>
-        <a class="active" href="uploads.html">Upload & storage</a>
-        <a href="settings.html">Platform</a>
+      <nav class="sidebar-nav">
+        <a href="/admin/" class="nav-item">Overview</a>
+        <a href="/admin/users.html" class="nav-item">Users</a>
+        <a href="/admin/content.html" class="nav-item">Content</a>
+        <a href="/admin/uploads.html" class="nav-item active">Uploads & Storage</a>
+        <a href="/admin/reports.html" class="nav-item">Reports</a>
+        <a href="/admin/settings.html" class="nav-item">Platform Settings</a>
+        <a href="/admin/audit-logs.html" class="nav-item">Audit Logs</a>
+        <a href="/app/" class="nav-item">← Back to App</a>
       </nav>
     </aside>
 
-    <main class="admin-main">
-      <header class="admin-header">
-        <h1>Upload & Storage</h1>
+    <div class="main-area">
+      <header class="topbar">
+        <h2 style="font-size:1.125rem;margin:0;">Upload Availability & Storage</h2>
       </header>
 
-      <section class="card admin-form">
-        <h2>Upload availability</h2>
-        <label>
-          Global uploads enabled
-          <input type="checkbox" checked />
-        </label>
-        <label>
-          Max file size (MB)
-          <input type="number" value="50" />
-        </label>
-        <label>
-          Maintenance message title
-          <input type="text" value="Uploads Temporarily Unavailable" />
-        </label>
-        <button class="btn btn-primary" type="button">Save settings</button>
-      </section>
-    </main>
-  </body>
+      <main class="content admin-content">
+        <div id="alert" class="alert hidden"></div>
+
+        <!-- Storage Overview -->
+        <div class="stats-grid" id="storageStats">
+          <div class="stat-card">
+            <div class="stat-value" id="statUsed">—</div>
+            <div class="stat-label">Storage Used</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statCapacity">—</div>
+            <div class="stat-label">Configured Capacity</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statFiles">—</div>
+            <div class="stat-label">Active Files</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statState">—</div>
+            <div class="stat-label">Current State</div>
+          </div>
+        </div>
+
+        <!-- Settings Form -->
+        <div class="card">
+          <div class="card-header">Global Upload Settings</div>
+          <div class="card-body">
+            <form id="uploadSettingsForm">
+              <div class="grid grid-cols-2 gap-4" style="margin-bottom:1.5rem;">
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" id="uploadsEnabled"> Uploads enabled globally
+                </label>
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" id="imagesEnabled"> Image uploads
+                </label>
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" id="pdfsEnabled"> PDF uploads
+                </label>
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" id="videosEnabled"> Video uploads
+                </label>
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" id="documentsEnabled"> Document uploads
+                </label>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Upload State</label>
+                <select id="uploadState" class="form-select">
+                  <option value="AVAILABLE">AVAILABLE</option>
+                  <option value="WARNING">WARNING</option>
+                  <option value="LIMIT_REACHED">LIMIT_REACHED</option>
+                  <option value="PROVIDER_ERROR">PROVIDER_ERROR</option>
+                  <option value="ADMIN_DISABLED">ADMIN_DISABLED</option>
+                  <option value="MAINTENANCE">MAINTENANCE</option>
+                </select>
+                <p class="form-hint">Changing to LIMIT_REACHED or ADMIN_DISABLED immediately blocks new uploads.</p>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div class="form-group">
+                  <label class="form-label">Max file size (MB)</label>
+                  <input type="number" id="maxFileSize" class="form-input" min="1" max="100">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Max files per post</label>
+                  <input type="number" id="maxFilesPerPost" class="form-input" min="1" max="20">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Total storage capacity (GB)</label>
+                  <input type="number" id="totalCapacity" class="form-input" min="1" step="0.1">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Warning threshold (%)</label>
+                  <input type="number" id="warningThreshold" class="form-input" min="50" max="99">
+                </div>
+              </div>
+
+              <hr style="margin:1.5rem 0;border-color:var(--border);">
+
+              <h4 style="margin-bottom:1rem;">User-facing Unavailable Message</h4>
+              <div class="form-group">
+                <label class="form-label">Title</label>
+                <input type="text" id="unavailableTitle" class="form-input">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Detailed message</label>
+                <textarea id="unavailableMessage" class="form-textarea" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Short notice</label>
+                <input type="text" id="shortNotice" class="form-input">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Support email</label>
+                <input type="email" id="supportEmail" class="form-input">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Support URL</label>
+                <input type="url" id="supportUrl" class="form-input" placeholder="https://…">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Estimated restoration time</label>
+                <input type="text" id="estimatedRestoration" class="form-input" placeholder="e.g. Within 24 hours">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Restoration announcement</label>
+                <input type="text" id="restorationAnnouncement" class="form-input">
+              </div>
+
+              <hr style="margin:1.5rem 0;border-color:var(--border);">
+
+              <h4 style="margin-bottom:1rem;">Alternative Upload Destination</h4>
+              <label class="flex items-center gap-2" style="margin-bottom:1rem;">
+                <input type="checkbox" id="alternativeEnabled"> Enable alternative destination
+              </label>
+              <div class="form-group">
+                <label class="form-label">Alternative URL (must be HTTPS)</label>
+                <input type="url" id="alternativeUrl" class="form-input" placeholder="https://approved-service.example.com">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Button label</label>
+                <input type="text" id="alternativeLabel" class="form-input">
+              </div>
+              <p class="form-hint">Students will be warned they are leaving StudeCo. Only use administrator-approved domains.</p>
+
+              <div style="margin-top:1.5rem;display:flex;gap:0.75rem;">
+                <button type="submit" class="btn btn-primary" id="saveBtn">Save settings</button>
+                <button type="button" class="btn btn-secondary" id="restoreBtn">Restore uploads (set AVAILABLE)</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module">
+    import { requireAdmin, getSupabase } from '/js/supabase-client.js';
+    import { formatBytes } from '/js/services/upload-service.js';
+
+    const { user, role } = await requireAdmin() || {};
+    if (!user) throw new Error('Admin required');
+
+    const supabase = getSupabase();
+    const alertEl = document.getElementById('alert');
+
+    function showAlert(msg, type = 'success') {
+      alertEl.textContent = msg;
+      alertEl.className = `alert alert-${type}`;
+      alertEl.classList.remove('hidden');
+      setTimeout(() => alertEl.classList.add('hidden'), 5000);
+    }
+
+    // Load current settings
+    const { data: settings, error } = await supabase
+      .from('upload_settings')
+      .select('*')
+      .limit(1)
+      .single();
+
+    if (error || !settings) {
+      showAlert('Failed to load upload settings: ' + (error?.message || 'No settings row'), 'danger');
+    } else {
+      // Populate form
+      document.getElementById('uploadsEnabled').checked = settings.uploads_enabled;
+      document.getElementById('imagesEnabled').checked = settings.images_enabled;
+      document.getElementById('pdfsEnabled').checked = settings.pdfs_enabled;
+      document.getElementById('videosEnabled').checked = settings.videos_enabled;
+      document.getElementById('documentsEnabled').checked = settings.documents_enabled;
+      document.getElementById('uploadState').value = settings.upload_state;
+      document.getElementById('maxFileSize').value = Math.round((settings.max_file_size_bytes || 0) / 1048576);
+      document.getElementById('maxFilesPerPost').value = settings.max_files_per_post;
+      document.getElementById('totalCapacity').value = ((settings.total_storage_capacity_bytes || 0) / 1073741824).toFixed(1);
+      document.getElementById('warningThreshold').value = settings.warning_threshold_percent;
+      document.getElementById('unavailableTitle').value = settings.unavailable_title || '';
+      document.getElementById('unavailableMessage').value = settings.unavailable_message || '';
+      document.getElementById('shortNotice').value = settings.short_notice || '';
+      document.getElementById('supportEmail').value = settings.support_email || '';
+      document.getElementById('supportUrl').value = settings.support_url || '';
+      document.getElementById('estimatedRestoration').value = settings.estimated_restoration_time || '';
+      document.getElementById('restorationAnnouncement').value = settings.restoration_announcement || '';
+      document.getElementById('alternativeEnabled').checked = settings.alternative_enabled;
+      document.getElementById('alternativeUrl').value = settings.alternative_url || '';
+      document.getElementById('alternativeLabel').value = settings.alternative_label || '';
+
+      document.getElementById('statState').textContent = settings.upload_state;
+      document.getElementById('statCapacity').textContent = formatBytes(settings.total_storage_capacity_bytes);
+    }
+
+    // Storage usage
+    const { data: files } = await supabase
+      .from('uploaded_files')
+      .select('size_bytes')
+      .eq('status', 'active');
+
+    const used = (files || []).reduce((s, f) => s + (f.size_bytes || 0), 0);
+    document.getElementById('statUsed').textContent = formatBytes(used);
+    document.getElementById('statFiles').textContent = (files || []).length;
+
+    // Save
+    document.getElementById('uploadSettingsForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('saveBtn');
+      btn.disabled = true;
+
+      const altUrl = document.getElementById('alternativeUrl').value.trim();
+      if (document.getElementById('alternativeEnabled').checked && altUrl && !altUrl.startsWith('https://')) {
+        showAlert('Alternative URL must use HTTPS.', 'danger');
+        btn.disabled = false;
+        return;
+      }
+
+      const updates = {
+        uploads_enabled: document.getElementById('uploadsEnabled').checked,
+        images_enabled: document.getElementById('imagesEnabled').checked,
+        pdfs_enabled: document.getElementById('pdfsEnabled').checked,
+        videos_enabled: document.getElementById('videosEnabled').checked,
+        documents_enabled: document.getElementById('documentsEnabled').checked,
+        upload_state: document.getElementById('uploadState').value,
+        max_file_size_bytes: parseInt(document.getElementById('maxFileSize').value, 10) * 1048576,
+        max_files_per_post: parseInt(document.getElementById('maxFilesPerPost').value, 10),
+        total_storage_capacity_bytes: parseFloat(document.getElementById('totalCapacity').value) * 1073741824,
+        warning_threshold_percent: parseInt(document.getElementById('warningThreshold').value, 10),
+        unavailable_title: document.getElementById('unavailableTitle').value.trim(),
+        unavailable_message: document.getElementById('unavailableMessage').value.trim(),
+        short_notice: document.getElementById('shortNotice').value.trim(),
+        support_email: document.getElementById('supportEmail').value.trim(),
+        support_url: document.getElementById('supportUrl').value.trim() || null,
+        estimated_restoration_time: document.getElementById('estimatedRestoration').value.trim() || null,
+        restoration_announcement: document.getElementById('restorationAnnouncement').value.trim(),
+        alternative_enabled: document.getElementById('alternativeEnabled').checked,
+        alternative_url: altUrl || null,
+        alternative_label: document.getElementById('alternativeLabel').value.trim(),
+        config_version: (settings?.config_version || 0) + 1,
+        updated_by: user.id,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error: updateError } = await supabase
+        .from('upload_settings')
+        .update(updates)
+        .eq('id', settings.id);
+
+      if (updateError) {
+        showAlert('Failed to save: ' + updateError.message, 'danger');
+      } else {
+        // Audit log
+        await supabase.from('admin_audit_logs').insert({
+          actor_id: user.id,
+          action: 'update_upload_settings',
+          target_type: 'upload_settings',
+          target_id: settings.id,
+          new_value: { state: updates.upload_state, uploads_enabled: updates.uploads_enabled },
+          outcome: 'success'
+        });
+
+        showAlert('Upload settings saved. Config version: ' + updates.config_version);
+        document.getElementById('statState').textContent = updates.upload_state;
+      }
+      btn.disabled = false;
+    });
+
+    // Quick restore
+    document.getElementById('restoreBtn').addEventListener('click', async () => {
+      if (!confirm('Set upload state to AVAILABLE and re-enable uploads?')) return;
+
+      const { error } = await supabase
+        .from('upload_settings')
+        .update({
+          upload_state: 'AVAILABLE',
+          uploads_enabled: true,
+          config_version: (settings?.config_version || 0) + 1,
+          updated_by: user.id,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', settings.id);
+
+      if (error) {
+        showAlert('Failed: ' + error.message, 'danger');
+      } else {
+        await supabase.from('admin_audit_logs').insert({
+          actor_id: user.id,
+          action: 'restore_uploads',
+          target_type: 'upload_settings',
+          outcome: 'success'
+        });
+        document.getElementById('uploadState').value = 'AVAILABLE';
+        document.getElementById('uploadsEnabled').checked = true;
+        document.getElementById('statState').textContent = 'AVAILABLE';
+        showAlert('Uploads restored to AVAILABLE.');
+      }
+    });
+  </script>
+</body>
 </html>

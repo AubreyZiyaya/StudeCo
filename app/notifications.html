@@ -1,41 +1,107 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Notifications | StudeCo</title>
-    <link rel="stylesheet" href="../assets/css/styles.css" />
-  </head>
-  <body>
-    <div class="app-layout">
-      <aside class="sidebar">
-        <div class="brand">
-          <span class="brand-mark">S</span>
-          <span>StudeCo</span>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notifications – StudeCo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="stylesheet" href="/assets/css/app.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header"><a href="/app/" class="logo"><span class="logo-icon">S</span><span>StudeCo</span></a></div>
+      <nav class="sidebar-nav" id="sidebarNav"></nav>
+      <div class="sidebar-footer"><button class="btn btn-ghost" id="signOutBtn" style="width:100%;">Sign out</button></div>
+    </aside>
+    <div class="main-area">
+      <header class="topbar">
+        <button class="btn btn-ghost btn-icon mobile-sidebar-btn" id="sidebarToggle">☰</button>
+        <h2 style="font-size:1.125rem;margin:0;flex:1;">Notifications</h2>
+        <div class="topbar-actions">
+          <button class="btn btn-ghost btn-sm" id="markAllRead">Mark all read</button>
+          <button class="btn btn-ghost btn-icon" id="themeToggle">🌓</button>
+          <span class="avatar" id="userAvatar">?</span>
         </div>
-        <nav class="sidebar-nav">
-          <a href="feed.html">Home</a>
-          <a href="groups.html">Groups</a>
-          <a href="resources.html">Resources</a>
-          <a href="messages.html">Messages</a>
-          <a class="active" href="notifications.html">Notifications</a>
-          <a href="events.html">Events</a>
-          <a href="opportunities.html">Opportunities</a>
-          <a href="profile.html">Profile</a>
-          <a href="settings.html">Settings</a>
-        </nav>
-      </aside>
-
-      <main class="main-panel">
-        <section class="card">
-          <h1>Notifications</h1>
-          <ul class="notification-list">
-            <li>Sam liked your post.</li>
-            <li>New group invitation: Computer Science Society</li>
-            <li>You were mentioned in a discussion.</li>
-          </ul>
-        </section>
+      </header>
+      <main class="content" style="max-width:640px;">
+        <div id="notifList"></div>
       </main>
     </div>
-  </body>
+  </div>
+  <script type="module">
+    import { getSupabase } from '/js/supabase-client.js';
+    import { initShell, renderSidebarNav } from '/js/components/shell.js';
+    import { escapeHtml, formatRelative, showToast } from '/js/utils/dom.js';
+
+    document.getElementById('sidebarNav').innerHTML = renderSidebarNav('notifications');
+    const { user } = await initShell('notifications');
+    const supabase = getSupabase();
+
+    async function load() {
+      const list = document.getElementById('notifList');
+      list.innerHTML = '<div class="loading-state"><div class="spinner"></div></div>';
+
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*, actor:actor_id(display_name)')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        list.innerHTML = `<div class="alert alert-danger">${escapeHtml(error.message)}</div>`;
+        return;
+      }
+      if (!data?.length) {
+        list.innerHTML = '<div class="empty-state"><h3>No notifications</h3><p class="text-muted">You\'re all caught up.</p></div>';
+        return;
+      }
+
+      list.innerHTML = data.map(n => `
+        <article class="card notif-item ${n.is_read ? '' : 'unread'}" data-id="${n.id}">
+          <div class="card-body flex gap-3 items-start">
+            <div class="notif-dot ${n.is_read ? '' : 'active'}"></div>
+            <div style="flex:1;">
+              <div class="font-medium">${escapeHtml(n.title || n.type)}</div>
+              <p class="text-secondary text-sm">${escapeHtml(n.body || '')}</p>
+              <div class="text-muted text-xs" style="margin-top:0.25rem;">
+                ${n.actor?.display_name ? escapeHtml(n.actor.display_name) + ' · ' : ''}${formatRelative(n.created_at)}
+              </div>
+            </div>
+            ${n.link ? `<a href="${escapeHtml(n.link)}" class="btn btn-ghost btn-sm">View</a>` : ''}
+          </div>
+        </article>
+      `).join('');
+
+      // Mark visible as read on click
+      list.querySelectorAll('.notif-item.unread').forEach(el => {
+        el.addEventListener('click', async () => {
+          await supabase.from('notifications').update({ is_read: true }).eq('id', el.dataset.id);
+          el.classList.remove('unread');
+          el.querySelector('.notif-dot')?.classList.remove('active');
+        });
+      });
+    }
+
+    document.getElementById('markAllRead').addEventListener('click', async () => {
+      await supabase.from('notifications').update({ is_read: true }).eq('user_id', user.id).eq('is_read', false);
+      showToast('All marked as read', 'success');
+      load();
+    });
+
+    load();
+  </script>
+  <style>
+    .notif-item { margin-bottom: 0.5rem; cursor: pointer; transition: background 0.15s; }
+    .notif-item.unread { background: var(--primary-50); border-color: var(--primary-200); }
+    .notif-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: transparent;
+      margin-top: 0.5rem; flex-shrink: 0;
+    }
+    .notif-dot.active { background: var(--primary-600); }
+  </style>
+</body>
 </html>
